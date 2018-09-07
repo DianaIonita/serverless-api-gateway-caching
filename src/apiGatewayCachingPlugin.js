@@ -16,118 +16,6 @@ const getRestApiId = async serverless => {
     .map(output => output.OutputValue)[0];
 }
 
-const configureApiGatewayCaching = async serverless => {
-  //let restApiId = await getRestApiId(serverless);
-  let restApiId = 'hg714gr6wl';
-
-  AWS.config.update({
-    region: serverless.service.provider.region,
-  });
-
-  const apiGateway = new AWS.APIGateway();
-  let params = {
-    restApiId,
-    stageName: 'devdiana',
-    patchOperations: [
-      {
-        op: 'replace',
-        path: '/cacheClusterEnabled',
-        value: 'true'
-      },
-      {
-        op: 'replace',
-        path: '/cacheClusterSize',
-        value: '0.5'
-      },
-      {
-        op: 'replace',
-        path: '/cats/GET/caching/enabled',
-        value: 'true'
-      },
-      {
-        op: 'replace',
-        path: '/cats/GET/caching/ttlInSeconds',
-        value: '10'
-      },
-      {
-        op: 'replace',
-        path: '/~1cats~1\{pawId\}/GET/caching/enabled',
-        value: 'true'
-      },
-      {
-        op: 'replace',
-        path: '/~1cats~1\{pawId\}/GET/caching/ttlInSeconds',
-        value: '15'
-      }
-    ]
-  }
-  let result = await apiGateway.updateStage(params).promise();
-  serverless.cli.log(`# Update Stage result: ${JSON.stringify(result)}`);
-  console.log('Okay so far');
-
-  // let template = {
-  //   Resources: {
-  //     ApiGatewayMethodCatsPawidVarGet: serverless.service.provider.compiledCloudFormationTemplate.Resources.ApiGatewayMethodCatsPawidVarGet
-  //   }
-  // };
-
-  let method = serverless.service.provider.compiledCloudFormationTemplate.Resources.ApiGatewayMethodCatsPawidVarGet;
-  method.Properties.RequestParameters = {
-    "method.request.path.pawId": true,
-    "method.request.header.Accept-Language": false
-  };
-  method.Properties.Integration.RequestParameters = {
-    "integration.request.path.pawId": "method.request.path.pawId",
-    "integration.request.header.Accept-Language": "method.request.header.Accept-Language"
-  };
-  method.Properties.Integration.CacheNamespace = "ApiGatewayMethodCatsPawidVarGetCacheNS";
-  method.Properties.Integration.CacheKeyParameters = ["method.request.path.pawId", "method.request.header.Accept-Language"];
-
-  // let params2 = {
-  //   httpMethod: 'GET',
-  //   restApiId,
-  //   resourceId: '6b98bx', // TODO
-  //   patchOperations: [
-  //     // I tried this but then settled for referencing them in the serverless.yml under events/http/request/parameters/...
-  //     // {
-  //     //   op: 'replace',
-  //     //   path: '/~1cats~1\{pawId\}/GET/requestParameters',
-  //     //   value: '\{\"method.request.path.pawId\": \"true\",\"method.request.header.Accept-Language\": \"true\"\}'
-  //     // },
-  //     // {
-  //     //   op: 'replace',
-  //     //   path: '/~1cats~1/*/GET/requestParameters/method.request.path.pawId/caching/enabled',
-  //     //   value: 'true'
-  //     // },
-  //     {
-  //       op: 'replace',
-  //       path: '/requestParameters',
-  //       value: 'true'
-  //     },
-  //   ]
-  // }
-
-  // let result2 = await apiGateway.updateIntegration(params2).promise();
-  // serverless.cli.log(`# Update Integration result: ${JSON.stringify(result2)}`);
-  // console.log('Okay so far');
-
-  // const templateBody = fs.readFileSync(`./node_modules/serverless-api-gateway-caching/src/cf.yml`, 'utf8');
-  // let params2 = {
-  //   StackName: `cat-api-devdiana`,
-  //   TemplateBody: JSON.stringify(template)
-  // }
-
-  // const cloudformation = new AWS.CloudFormation();
-  // let cfResponse = await cloudformation.updateStack(params2).promise();
-  // console.log('Okay so far');
-  // console.log(`Updating CloudFormation stack with Id ${cfResponse.StackId}...`);
-  // let waitReq = {
-  //   StackName: cfResponse.StackId
-  // };
-  // await cloudformation.waitFor('stackUpdateComplete', waitReq).promise();
-  // console.log(`Done updating CloudFormation stack with Id ${cfResponse.StackId}`);
-}
-
 const getResourcesByType = (type, serverless) => {
   let result = []
   let resourceKeys = Object.keys(serverless.service.provider.compiledCloudFormationTemplate.Resources);
@@ -172,6 +60,9 @@ const updateCompiledTemplateWithCaching = (settings, serverless) => {
     if (!method.resource.Properties.Integration.CacheKeyParameters) {
       method.resource.Properties.Integration.CacheKeyParameters = [];
     }
+    if (!method.resource.Properties.Integration.RequestParameters) {
+      method.resource.Properties.Integration.RequestParameters = {}
+    }
 
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
       method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = cacheKeyParameter.required;
@@ -182,8 +73,76 @@ const updateCompiledTemplateWithCaching = (settings, serverless) => {
   }
 }
 
-const updateStageCacheSettings = async (settings, serverless) => {
+const createPatchForStage = (settings) => {
+  return [
+    {
+      op: 'replace',
+      path: '/cacheClusterEnabled',
+      value: `${settings.cachingEnabled}`
+    },
+    {
+      op: 'replace',
+      path: '/cacheClusterSize',
+      value: `${settings.cacheClusterSize}`
+    }
+  ]
+}
 
+const createPatchForEndpoint = (settings, endpointSettings, serverless) => {
+
+}
+
+const updateStageCacheSettings = async (settings, serverless) => {
+  let restApiId = await getRestApiId(serverless);
+
+  AWS.config.update({
+    region: serverless.service.custom.region,
+  });
+
+  let patchOps = [createPatchForStage(settings)];
+  for (let endpointSettings of settings.endpointSettings) {
+    let endpointPatch = createPatchForEndpoint(settings, endpointSettings, serverless);
+    patchOps = patchOps.concat(endpointPatch);
+  }
+  const apiGateway = new AWS.APIGateway();
+  let params = {
+    restApiId,
+    stageName: serverless.service.custom.stage,
+    patchOperations: [
+      // {
+      //   op: 'replace',
+      //   path: '/cacheClusterEnabled',
+      //   value: 'true'
+      // },
+      // {
+      //   op: 'replace',
+      //   path: '/cacheClusterSize',
+      //   value: '0.5'
+      // },
+      {
+        op: 'replace',
+        path: '/cats/GET/caching/enabled',
+        value: 'true'
+      },
+      {
+        op: 'replace',
+        path: '/cats/GET/caching/ttlInSeconds',
+        value: '10'
+      },
+      {
+        op: 'replace',
+        path: '/~1cats~1\{pawId\}/GET/caching/enabled',
+        value: 'true'
+      },
+      {
+        op: 'replace',
+        path: '/~1cats~1\{pawId\}/GET/caching/ttlInSeconds',
+        value: '15'
+      }
+    ]
+  }
+  let result = await apiGateway.updateStage(params).promise();
+  serverless.cli.log(`# Update Stage result: ${JSON.stringify(result)}`);
 }
 
 class ApiGatewayCachingPlugin {

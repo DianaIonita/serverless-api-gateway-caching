@@ -20,7 +20,7 @@ class ApiGatewayCachingSettings {
       return;
     }
     this.cachingEnabled = serverless.service.custom.apiGatewayCaching.enabled;
-    this.cachingClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
+    this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds;
 
     this.endpointSettings = [];
