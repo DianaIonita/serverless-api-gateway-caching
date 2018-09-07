@@ -1,0 +1,11 @@
+{
+  "name": "serverless-api-gateway-caching",
+  "version": "1.0.0-rc2",
+  "description": "",
+  "main": "src/apiGatewayCachingPlugin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
