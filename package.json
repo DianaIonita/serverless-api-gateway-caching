@@ -1,0 +1,20 @@
+{
+  "name": "serverless-api-gateway-caching",
+  "version": "1.0.0-rc12",
+  "description": "",
+  "main": "src/apiGatewayCachingPlugin.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Diana Ionita",
+  "license": "ISC",
+  "dependencies": {
+    "aws-sdk": "^2.310.0",
+    "lodash.get": "^4.4.2",
+    "lodash.isempty": "^4.4.0"
+  },
+  "devDependencies": {
+    "chai": "^4.1.2",
+    "mocha": "^5.2.0"
+  }
+}
