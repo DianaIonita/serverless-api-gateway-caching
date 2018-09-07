@@ -1,6 +1,6 @@
 'use strict';
 
-const ApiGatewayCachingSettings = require('./apiGatewayCachingSettings');
+const ApiGatewayCachingSettings = require('./ApiGatewayCachingSettings');
 const addPathParametersCacheConfig = require('./pathParametersCache');
 const updateStageCacheSettings = require('./stageCache');
 
@@ -43,9 +43,9 @@ class ApiGatewayCachingPlugin {
     if (!this.settings.cachingEnabled) {
       return;
     }
-    serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
+    this.serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
     return updateStageCacheSettings(this.settings, this.serverless).then(() => {
-      serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
+      this.serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
     });
   }
 }

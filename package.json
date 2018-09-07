@@ -1,6 +1,6 @@
 {
   "name": "serverless-api-gateway-caching",
-  "version": "1.0.0-rc8",
+  "version": "1.0.0-rc11",
   "description": "",
   "main": "src/apiGatewayCachingPlugin.js",
   "scripts": {
