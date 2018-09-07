@@ -88,8 +88,57 @@ const createPatchForStage = (settings) => {
   ]
 }
 
-const createPatchForEndpoint = (settings, endpointSettings, serverless) => {
+String.prototype.replaceAll = function (search, replacement) {
+  let target = this;
 
+  return target
+    .split(search)
+    .join(replacement);
+};
+
+const escapeJsonPointer = path => {
+  return path
+    .replaceAll('~', '~0')
+    .replaceAll('/', '~1')
+    .replaceAll('{', '\{')
+    .replaceAll('}', '\}');
+}
+
+const patchPathFor = (endpointSettings, serverless) => {
+  let lambda = serverless.service.getFunction(endpointSettings.functionName);
+  // TODO is empty
+  if (!lambda.events) {
+    // TODO
+    throw new Error('Something bad happened');
+  }
+  // TODO there can be many http events
+  let httpEvents = lambda.events.filter(e => e.http != null);
+  // TODO is empty
+  if (!httpEvents) {
+    // TODO
+    throw new Error('Something else which is bad happened');
+  }
+  let { path, method } = httpEvents[0].http;
+  let escapedPath = escapeJsonPointer(path);
+  let patchPath = `/${escapedPath}/${method.toUpperCase()}`;
+  return patchPath;
+}
+
+const createPatchForEndpoint = (endpointSettings, serverless) => {
+  const patchPath = patchPathFor(endpointSettings, serverless);
+  let patch = [{
+    op: 'replace',
+    path: `${patchPath}/caching/enabled`,
+    value: `${endpointSettings.cachingEnabled}`
+  }]
+  if (endpointSettings.cachingEnabled) {
+    patch.push({
+      op: 'replace',
+      path: `${patchPath}/caching/ttlInSeconds`,
+      value: `${endpointSettings.cacheTtlInSeconds}`
+    })
+  }
+  return patch;
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
@@ -99,50 +148,20 @@ const updateStageCacheSettings = async (settings, serverless) => {
     region: serverless.service.custom.region,
   });
 
-  let patchOps = [createPatchForStage(settings)];
+  let patchOps = createPatchForStage(settings);
   for (let endpointSettings of settings.endpointSettings) {
-    let endpointPatch = createPatchForEndpoint(settings, endpointSettings, serverless);
+    let endpointPatch = createPatchForEndpoint(endpointSettings, serverless);
     patchOps = patchOps.concat(endpointPatch);
   }
   const apiGateway = new AWS.APIGateway();
   let params = {
     restApiId,
     stageName: serverless.service.custom.stage,
-    patchOperations: [
-      // {
-      //   op: 'replace',
-      //   path: '/cacheClusterEnabled',
-      //   value: 'true'
-      // },
-      // {
-      //   op: 'replace',
-      //   path: '/cacheClusterSize',
-      //   value: '0.5'
-      // },
-      {
-        op: 'replace',
-        path: '/cats/GET/caching/enabled',
-        value: 'true'
-      },
-      {
-        op: 'replace',
-        path: '/cats/GET/caching/ttlInSeconds',
-        value: '10'
-      },
-      {
-        op: 'replace',
-        path: '/~1cats~1\{pawId\}/GET/caching/enabled',
-        value: 'true'
-      },
-      {
-        op: 'replace',
-        path: '/~1cats~1\{pawId\}/GET/caching/ttlInSeconds',
-        value: '15'
-      }
-    ]
+    patchOperations: patchOps
   }
+  serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
   let result = await apiGateway.updateStage(params).promise();
-  serverless.cli.log(`# Update Stage result: ${JSON.stringify(result)}`);
+  serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
 }
 
 class ApiGatewayCachingPlugin {
