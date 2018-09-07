@@ -1,5 +1,7 @@
+const isEmpty = require('lodash.isempty');
+
 class ApiGatewayEndpointCachingSettings {
-  constructor(functionName, functionSettings) {
+  constructor(functionName, functionSettings, globalSettings) {
     this.functionName = functionName;
 
     // TODO multiple http endpoints
@@ -8,7 +10,7 @@ class ApiGatewayEndpointCachingSettings {
       this.cachingEnabled = false;
     }
     this.cachingEnabled = cachingConfig.enabled;
-    this.cacheTtlInSeconds = cachingConfig.ttlInSeconds;
+    this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
     this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
   }
 }
@@ -27,17 +29,16 @@ class ApiGatewayCachingSettings {
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
       if (this.isApiGatewayEndpoint(functionSettings)) {
-        this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionName, functionSettings))
+        this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionName, functionSettings, this))
       }
     }
   }
 
   isApiGatewayEndpoint(functionSettings) {
-    // TODO isEmpty
-    if (!functionSettings.events) {
+    if (!isEmpty(functionSettings.events)) {
       return false;
     }
-    return functionSettings.events.filter(e => e.http != null).length > 0;
+    return !isEmpty(functionSettings.events.filter(e => e.http != null));
   }
 }
 module.exports = ApiGatewayCachingSettings
