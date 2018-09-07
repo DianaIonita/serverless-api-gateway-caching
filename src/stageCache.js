@@ -97,7 +97,10 @@ const updateStageCacheSettings = async (settings, serverless) => {
     stageName: serverless.service.custom.stage,
     patchOperations: patchOps
   }
+
+  serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
   await apiGateway.updateStage(params).promise();
+  serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
 }
 
 module.exports = updateStageCacheSettings;

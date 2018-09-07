@@ -1,4 +1,5 @@
 const isEmpty = require('lodash.isempty');
+const get = require('lodash.get');
 
 class ApiGatewayEndpointCachingSettings {
   constructor(functionName, functionSettings, globalSettings) {
@@ -17,7 +18,7 @@ class ApiGatewayEndpointCachingSettings {
 
 class ApiGatewayCachingSettings {
   constructor(serverless) {
-    if (!serverless.service.custom.apiGatewayCaching) {
+    if (!get(serverless, "service.custom.apiGatewayCaching")) {
       this.cachingEnabled = false;
       return;
     }
@@ -35,10 +36,10 @@ class ApiGatewayCachingSettings {
   }
 
   isApiGatewayEndpoint(functionSettings) {
-    if (!isEmpty(functionSettings.events)) {
+    if (isEmpty(functionSettings.events)) {
       return false;
     }
-    return !isEmpty(functionSettings.events.filter(e => e.http != null));
+    return functionSettings.events.filter(e => e.http != null).length > 0;
   }
 }
 module.exports = ApiGatewayCachingSettings

@@ -43,10 +43,8 @@ class ApiGatewayCachingPlugin {
     if (!this.settings.cachingEnabled) {
       return;
     }
-    this.serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
-    return updateStageCacheSettings(this.settings, this.serverless).then(() => {
-      this.serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
-    });
+
+    return updateStageCacheSettings(this.settings, this.serverless);
   }
 }
 
