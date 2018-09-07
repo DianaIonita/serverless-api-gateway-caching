@@ -9,7 +9,7 @@ class ApiGatewayEndpointCachingSettings {
     }
     this.cachingEnabled = cachingConfig.enabled;
     this.cacheTtlInSeconds = cachingConfig.ttlInSeconds;
-    this.cacheKeyParameters = cachingConfig.cacheConfigParameters;
+    this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
   }
 }
 

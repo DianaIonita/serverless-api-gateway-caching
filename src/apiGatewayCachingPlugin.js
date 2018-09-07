@@ -128,47 +128,108 @@ const configureApiGatewayCaching = async serverless => {
   // console.log(`Done updating CloudFormation stack with Id ${cfResponse.StackId}`);
 }
 
+const getResourcesByType = (type, serverless) => {
+  let result = []
+  let resourceKeys = Object.keys(serverless.service.provider.compiledCloudFormationTemplate.Resources);
+  for (let resourceName of resourceKeys) {
+    let resource = serverless.service.provider.compiledCloudFormationTemplate.Resources[resourceName];
+    if (resource.Type == type) {
+      result.push({ name: resourceName, resource });
+    }
+  }
+  return result;
+}
+
+const getResourceForLambdaFunctionNamed = (fullFunctionName, serverless) => {
+  let lambdaResource = getResourcesByType('AWS::Lambda::Function', serverless).filter(r => r.resource.Properties.FunctionName == fullFunctionName);
+  // TODO check empty
+  if (!lambdaResource || lambdaResource.length == 0) {
+    throw new Error('Something has gone wrong');
+  }
+  return lambdaResource[0];
+}
+
+const getApiGatewayMethodFor = (functionName, serverless) => {
+  const fullFunctionName = `${serverless.service.service}-${serverless.service.custom.stage}-${functionName}`;
+  const lambdaFunctionResource = getResourceForLambdaFunctionNamed(fullFunctionName, serverless);
+
+  // returns the first method found which depends on this lambda
+  const methods = getResourcesByType('AWS::ApiGateway::Method', serverless);
+  for (let method of methods) {
+    let stringified = JSON.stringify(method);
+    if (stringified.lastIndexOf(lambdaFunctionResource.name) != -1) {
+      return method;
+    }
+  }
+}
+
+const updateCompiledTemplateWithCaching = (settings, serverless) => {
+  for (let endpointSettings of settings.endpointSettings) {
+    if (!endpointSettings.cacheKeyParameters) {
+      continue;
+    }
+    const method = getApiGatewayMethodFor(endpointSettings.functionName, serverless);
+    if (!method.resource.Properties.Integration.CacheKeyParameters) {
+      method.resource.Properties.Integration.CacheKeyParameters = [];
+    }
+
+    for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
+      method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = cacheKeyParameter.required;
+      method.resource.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
+      method.resource.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
+    }
+    method.resource.Properties.Integration.CacheNamespace = `${method.name}CacheNS`;
+  }
+}
+
+const updateStageCacheSettings = async (settings, serverless) => {
+
+}
+
 class ApiGatewayCachingPlugin {
   constructor(serverless, options) {
     this.serverless = serverless;
     this.options = options;
 
     this.hooks = {
-      'before:package:initialize': this.beforePackageInitialize.bind(this),
-      // 'before:package:finalize': this.beforeDeploy.bind(this),
-      // 'after:aws:deploy:finalize:cleanup': this.setApiGatewayCaching.bind(this),
+      'before:package:initialize': this.createSettings.bind(this),
+      'before:package:finalize': this.updateCloudFormationTemplate.bind(this),
+      'after:aws:deploy:finalize:cleanup': this.updateStage.bind(this),
     };
   }
 
   // TODO rename
-  beforePackageInitialize() {
+  createSettings() {
     this.settings = new ApiGatewayCachingSettings(this.serverless);
-    // let restApiId = {
-    //   Ref: 'ApiGatewayRestApi',
-    // };
-
-    // // use the provided restApiId, if any
-    // if (this.serverless.service.provider.apiGateway && this.serverless.service.provider.apiGateway.restApiId) {
-    //   restApiId = this.serverless.service.provider.apiGateway.restApiId
-    // }
-
-    // // TODO rename var
-    // this.serverless.service.provider.compiledCloudFormationTemplate.Outputs.MyRestApiId = {
-    //   Description: 'Rest API Id',
-    //   Value: restApiId,
-    // };
   }
 
-  beforePackageFinalize() {
+  updateCloudFormationTemplate() {
     if (!this.settings.cachingEnabled) {
       return;
     }
-    return configureApiGatewayCaching(this.serverless);
+
+    let restApiId = {
+      Ref: 'ApiGatewayRestApi',
+    };
+    if (this.serverless.service.provider.apiGateway && this.serverless.service.provider.apiGateway.restApiId) {
+      restApiId = this.serverless.service.provider.apiGateway.restApiId
+    }
+    // TODO rename var
+    this.serverless.service.provider.compiledCloudFormationTemplate.Outputs.MyRestApiId = {
+      Description: 'Rest API Id',
+      Value: restApiId,
+    };
+
+    return updateCompiledTemplateWithCaching(this.settings, this.serverless);
   }
 
-  // setApiGatewayCaching() {
-  //   return configureApiGatewayCaching(this.serverless);
-  // }
+  updateStage() {
+    if (!this.settings.cachingEnabled) {
+      return;
+    }
+
+    return updateStageCacheSettings(this.settings, this.serverless);
+  }
 }
 
 module.exports = ApiGatewayCachingPlugin;
