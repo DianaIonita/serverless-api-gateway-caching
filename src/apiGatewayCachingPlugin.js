@@ -120,7 +120,7 @@ const patchPathFor = (endpointSettings, serverless) => {
   }
   let { path, method } = httpEvents[0].http;
   let escapedPath = escapeJsonPointer(path);
-  let patchPath = `/${escapedPath}/${method.toUpperCase()}`;
+  let patchPath = `~1${escapedPath}/${method.toUpperCase()}`;
   return patchPath;
 }
 
@@ -128,13 +128,13 @@ const createPatchForEndpoint = (endpointSettings, serverless) => {
   const patchPath = patchPathFor(endpointSettings, serverless);
   let patch = [{
     op: 'replace',
-    path: `${patchPath}/caching/enabled`,
+    path: `/${patchPath}/caching/enabled`,
     value: `${endpointSettings.cachingEnabled}`
   }]
   if (endpointSettings.cachingEnabled) {
     patch.push({
       op: 'replace',
-      path: `${patchPath}/caching/ttlInSeconds`,
+      path: `/${patchPath}/caching/ttlInSeconds`,
       value: `${endpointSettings.cacheTtlInSeconds}`
     })
   }
@@ -176,7 +176,6 @@ class ApiGatewayCachingPlugin {
     };
   }
 
-  // TODO rename
   createSettings() {
     this.settings = new ApiGatewayCachingSettings(this.serverless);
   }
