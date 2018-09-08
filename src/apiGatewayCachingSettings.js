@@ -9,6 +9,7 @@ class ApiGatewayEndpointCachingSettings {
     let cachingConfig = functionSettings.events.filter(e => e.http != null)[0].http.caching;
     if (!cachingConfig) {
       this.cachingEnabled = false;
+      return;
     }
     this.cachingEnabled = cachingConfig.enabled;
     this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
