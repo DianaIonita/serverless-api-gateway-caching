@@ -57,25 +57,66 @@ describe('Creating settings', () => {
       });
 
       describe('and there are some http endpoints', () => {
+        let getCatByPawIdFunctionName = 'get-cat-by-paw-id';
+        let listAllCatsFunctionName = 'list-all-cats';
+        let getMyCatFunctionName = 'get-my-cat';
         before(() => {
-          let listCats = given.a_serverless_function('list-all-cats')
+          let listCats = given.a_serverless_function(listAllCatsFunctionName)
             .withHttpEndpoint('get', '/cats');
 
           let getCatByPawIdCaching = { enabled: true, ttlInSeconds: 30 };
-          let getCatByPawId = given.a_serverless_function('get-cat-by-paw-id')
+          let getCatByPawId = given.a_serverless_function(getCatByPawIdFunctionName)
             .withHttpEndpoint('get', '/cat/{pawId}', getCatByPawIdCaching);
+
+          let getMyCatCaching = { enabled: false };
+          let getMyCat = given.a_serverless_function(getMyCatFunctionName)
+            .withHttpEndpoint('get', '/cat/{pawId}', getMyCatCaching);
 
           serverless = given.a_serverless_instance()
             .withApiGatewayCachingConfig(true, '0.5', 45)
             .withFunction(given.a_serverless_function('schedule-cat-nap'))
             .withFunction(listCats)
-            .withFunction(getCatByPawId);
+            .withFunction(getCatByPawId)
+            .withFunction(getMyCat);
 
           cacheSettings = createSettingsFor(serverless);
         });
 
-        it.only('should create cache settings for all http endpoints', () => {
-          expect(cacheSettings.endpointSettings).to.have.lengthOf(2);
+        it('should create cache settings for all http endpoints', () => {
+          expect(cacheSettings.endpointSettings).to.have.lengthOf(3);
+        });
+
+        describe('caching for http endpoint without cache settings defined', () => {
+          let endpointSettings;
+          before(() => {
+            endpointSettings = cacheSettings.endpointSettings.find(e => e.functionName == listAllCatsFunctionName);
+          });
+
+          it('should default to false', () => {
+            expect(endpointSettings.cachingEnabled).to.be.false;
+          });
+        });
+
+        describe('caching for the http endpoint with cache settings disabled', () => {
+          let endpointSettings;
+          before(() => {
+            endpointSettings = cacheSettings.endpointSettings.find(e => e.functionName == getMyCatFunctionName);
+          });
+
+          it('should be set to false', () => {
+            expect(endpointSettings.cachingEnabled).to.be.false;
+          });
+        });
+
+        describe('caching for the http endpoint with cache settings enabled', () => {
+          let endpointSettings;
+          before(() => {
+            endpointSettings = cacheSettings.endpointSettings.find(e => e.functionName == getCatByPawIdFunctionName);
+          });
+
+          it('should be enabled', () => {
+            expect(endpointSettings.cachingEnabled).to.be.true;
+          });
         });
       });
     });
