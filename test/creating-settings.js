@@ -121,6 +121,28 @@ describe('Creating settings', () => {
       });
     });
   });
+
+  describe('when there are caching settings for an http endpoint', () => {
+    describe('and caching is turned off globally', () => {
+
+    });
+
+    describe('and the time to live is not specified', () => {
+
+    });
+
+    describe('and the time to live is specified', () => {
+
+    });
+
+    describe('and there are no cache key parameters', () => {
+
+    });
+
+    describe('and there are cache key parameters', () => {
+
+    });
+  });
 });
 
 const createSettingsFor = serverless => {
