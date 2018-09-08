@@ -44,3 +44,7 @@ functions:
               - name: request.header.Accept-Language
                 required: false
 ```
+
+## Limitations
+Currently not supported:
+- lambda functions with many http events
