@@ -6,6 +6,10 @@ const expect = require('chai').expect;
 describe('Creating settings', () => {
   let cacheSettings, serverless;
 
+  let getCatByPawIdFunctionName = 'get-cat-by-paw-id';
+  let listAllCatsFunctionName = 'list-all-cats';
+  let getMyCatFunctionName = 'get-my-cat';
+
   describe('when the input is invalid', () => {
     it('should set caching to disabled', () => {
       cacheSettings = createSettingsFor();
@@ -57,9 +61,6 @@ describe('Creating settings', () => {
       });
 
       describe('and there are some http endpoints', () => {
-        let getCatByPawIdFunctionName = 'get-cat-by-paw-id';
-        let listAllCatsFunctionName = 'list-all-cats';
-        let getMyCatFunctionName = 'get-my-cat';
         before(() => {
           let listCats = given.a_serverless_function(listAllCatsFunctionName)
             .withHttpEndpoint('get', '/cats');
@@ -123,24 +124,84 @@ describe('Creating settings', () => {
   });
 
   describe('when there are caching settings for an http endpoint', () => {
+    let endpoint;
     describe('and caching is turned off globally', () => {
+      before(() => {
+        let caching = { enabled: true }
+        endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
+          .withHttpEndpoint('get', '/cat/{pawId}', caching);
+        serverless = given.a_serverless_instance()
+          .withApiGatewayCachingConfig(false)
+          .withFunction(endpoint);
 
+        cacheSettings = createSettingsFor(serverless);
+      });
+
+      it('caching should not be defined for the endpoint', () => {
+        expect(cacheSettings.endpointSettings).to.not.exist;
+      });
     });
 
-    describe('and the time to live is not specified', () => {
+    describe('and caching is turned on globally', () => {
+      before(() => {
+        serverless = given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '1', 20);
+      });
 
-    });
+      describe('and only the fact that caching is enabled is specified', () => {
+        before(() => {
+          let caching = { enabled: true }
+          endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
+            .withHttpEndpoint('get', '/cat/{pawId}', caching);
+          serverless = serverless.withFunction(endpoint);
 
-    describe('and the time to live is specified', () => {
+          cacheSettings = createSettingsFor(serverless);
+        });
 
-    });
+        it('should inherit time to live settings from global settings', () => {
+          expect(cacheSettings.endpointSettings[0].cacheTtlInSeconds).to.equal(20);
+        });
 
-    describe('and there are no cache key parameters', () => {
+        it('should not set cache key parameter settings', () => {
+          expect(cacheSettings.endpointSettings[0].cacheKeyParameters).to.not.exist;
+        });
+      });
 
-    });
+      describe('and the time to live is specified', () => {
+        before(() => {
+          let caching = { enabled: true, ttlInSeconds: 67 }
+          endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
+            .withHttpEndpoint('get', '/cat/{pawId}', caching);
+          serverless = serverless.withFunction(endpoint);
 
-    describe('and there are cache key parameters', () => {
+          cacheSettings = createSettingsFor(serverless);
+        });
 
+        it('should set the correct time to live', () => {
+          expect(cacheSettings.endpointSettings[0].cacheTtlInSeconds).to.equal(67);
+        });
+      });
+
+      describe('and there are cache key parameters', () => {
+        let caching;
+        before(() => {
+          caching = {
+            enabled: true,
+            cacheKeyParameters: [
+              { name: 'request.path.pawId', required: true },
+              { name: 'request.header.Accept-Language', required: false }]
+          };
+          endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
+            .withHttpEndpoint('get', '/cat/{pawId}', caching);
+          serverless = serverless.withFunction(endpoint);
+
+          cacheSettings = createSettingsFor(serverless);
+        });
+
+        it('should set cache key parameters', () => {
+          expect(cacheSettings.endpointSettings[0].cacheKeyParameters).to.deep.equal(caching.cacheKeyParameters);
+        });
+      });
     });
   });
 });
