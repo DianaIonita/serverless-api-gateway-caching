@@ -1,21 +1,19 @@
 const APP_ROOT = '..';
+const given = require(`${APP_ROOT}/test/steps/given`);
 const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
 const expect = require('chai').expect;
 
 describe('Creating settings', () => {
   describe('when the input is invalid', () => {
     it('should set caching to disabled', () => {
-      let settings = new ApiGatewayCachingSettings();
+      let settings = createSettingsFor();
       expect(settings.cachingEnabled).to.be.false;
     });
   });
 
   describe('when there are no settings for Api Gateway caching', () => {
     it('should set caching to disabled', () => {
-      let serverless = {
-        service: { custom: {} }
-      }
-      let settings = new ApiGatewayCachingSettings(serverless);
+      let settings = createSettingsFor(given.a_serverless_instance());
       expect(settings.cachingEnabled).to.be.false;
     });
   });
@@ -23,18 +21,10 @@ describe('Creating settings', () => {
   describe('when there are settings defined for Api Gateway caching', () => {
     let settings;
     before(() => {
-      let serverless = {
-        service: {
-          custom: {
-            apiGatewayCaching: {
-              enabled: true,
-              clusterSize: '0.5',
-              ttlInSeconds: 45
-            }
-          }
-        }
-      }
-      settings = new ApiGatewayCachingSettings(serverless);
+      let serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true, '0.5', 45);
+
+      settings = createSettingsFor(serverless);
     });
 
     it('should set caching enabled', () => {
@@ -50,11 +40,22 @@ describe('Creating settings', () => {
     });
 
     describe('and there are some http endpoints', () => {
-      // before(() => {
-      //   serverless.service.functions = {
-
-      //   }
-      // })
+      before(() => {
+        serverless.service.functions = {
+          'list-cats': {
+            events: [{
+              http: {
+                path: '/cats',
+                method: 'get'
+              }
+            }]
+          }
+        }
+      });
     });
   });
 });
+
+const createSettingsFor = serverless => {
+  return new ApiGatewayCachingSettings(serverless);
+}

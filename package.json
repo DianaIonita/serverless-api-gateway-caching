@@ -8,16 +8,22 @@
   },
   "keywords": [
     "serverless",
+    "aws",
     "api",
     "gateway",
+    "rest",
+    "response",
     "caching"
   ],
   "author": "Diana Ionita",
-  "license": "MIT",
+  "license": "ISC",
   "dependencies": {
     "aws-sdk": "^2.310.0",
     "lodash.get": "^4.4.2",
     "lodash.isempty": "^4.4.0"
+  },
+  "bugs": {
+    "url": "https://github.com/DianaIonita/serverless-api-gateway-caching/issues"
   },
   "repository": {
     "type": "git",
