@@ -24,9 +24,6 @@ class ApiGatewayCachingSettings {
       return;
     }
     this.cachingEnabled = serverless.service.custom.apiGatewayCaching.enabled;
-    if (!this.cachingEnabled) {
-      return;
-    }
 
     if (options) {
       this.stage = options.stage || serverless.service.provider.stage;
@@ -36,10 +33,14 @@ class ApiGatewayCachingSettings {
       this.region = serverless.service.provider.region;
     }
 
+    this.endpointSettings = [];
+    if (!this.cachingEnabled) {
+      return;
+    }
+
     this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds;
 
-    this.endpointSettings = [];
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
       if (this.isApiGatewayEndpoint(functionSettings)) {

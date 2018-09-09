@@ -1,0 +1,43 @@
+{
+  "Type": "AWS::ApiGateway::Method",
+  "Properties": {
+    "HttpMethod": "GET",
+    "RequestParameters": {},
+    "ResourceId": {
+      "Ref": "ApiGatewayResourceCats"
+    },
+    "RestApiId": {
+      "Ref": "ApiGatewayRestApi"
+    },
+    "ApiKeyRequired": false,
+    "AuthorizationType": "NONE",
+    "Integration": {
+      "IntegrationHttpMethod": "POST",
+      "Type": "AWS_PROXY",
+      "Uri": {
+        "Fn::Join": [
+          "",
+          [
+            "arn:",
+            {
+              "Ref": "AWS::Partition"
+            },
+            ":apigateway:",
+            {
+              "Ref": "AWS::Region"
+            },
+            ":lambda:path/2015-03-31/functions/",
+            {
+              "Fn::GetAtt": [
+                "#{LAMBDA_RESOURCE_DEPENDENCY}",
+                "Arn"
+              ]
+            },
+            "/invocations"
+          ]
+        ]
+      }
+    },
+    "MethodResponses": []
+  }
+}
