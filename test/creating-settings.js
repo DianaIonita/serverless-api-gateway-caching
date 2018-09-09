@@ -138,7 +138,7 @@ describe('Creating settings', () => {
       });
 
       it('caching should not be defined for the endpoint', () => {
-        expect(cacheSettings.endpointSettings).to.not.exist;
+        expect(cacheSettings.endpointSettings).to.be.empty;
       });
     });
 
@@ -207,13 +207,15 @@ describe('Creating settings', () => {
 
   describe('when there are command line options for the deployment', () => {
     let options;
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .forStage('devstage')
+        .forRegion('eu-west-1')
+        .withApiGatewayCachingConfig(true, '0.5', 45);
+    });
 
     describe('and they do not specify the stage', () => {
       before(() => {
-        serverless = given.a_serverless_instance()
-          .forStage('devstage')
-          .withApiGatewayCachingConfig(true, '0.5', 45);
-
         options = {}
 
         cacheSettings = createSettingsFor(serverless, options);
@@ -224,17 +226,41 @@ describe('Creating settings', () => {
       });
     });
 
-    // describe('and they specify the stage', () => {
-    //   it('should use the stage from command line')
-    // });
+    describe('and they specify the stage', () => {
+      before(() => {
+        options = { stage: 'anotherstage' }
 
-    // describe('and they do not specify the region', () => {
-    //   it('should use the provider region');
-    // });
+        cacheSettings = createSettingsFor(serverless, options);
+      });
 
-    // describe('and they specify the region', () => {
-    //   it('should use the region from command line');
-    // });
+      it('should use the stage from command line', () => {
+        expect(cacheSettings.stage).to.equal('anotherstage');
+      });
+    });
+
+    describe('and they do not specify the region', () => {
+      before(() => {
+        options = {}
+
+        cacheSettings = createSettingsFor(serverless, options);
+      });
+
+      it('should use the provider region', () => {
+        expect(cacheSettings.region).to.equal('eu-west-1');
+      });
+    });
+
+    describe('and they specify the region', () => {
+      before(() => {
+        options = { region: 'someotherregion' }
+
+        cacheSettings = createSettingsFor(serverless, options);
+      });
+
+      it('should use the region from command line', () => {
+        expect(cacheSettings.region).to.equal('someotherregion');
+      });
+    });
   });
 });
 

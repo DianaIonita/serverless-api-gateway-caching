@@ -12,7 +12,7 @@ describe('Configuring path parameter caching', () => {
     before(() => {
       serverless = given.a_serverless_instance(serviceName)
         .withApiGatewayCachingConfig(true, '0.5', 45)
-        .forStage(dev);
+        .forStage(stage);
       cacheSettings = new ApiGatewayCachingSettings(serverless);
     });
 
@@ -43,7 +43,7 @@ describe('Configuring path parameter caching', () => {
     });
   });
 
-  describe.only('when one of the endpoints has cache key parameters', () => {
+  describe('when one of the endpoints has cache key parameters', () => {
     let cacheKeyParameters, method;
     let functionWithoutCachingName, functionWithCachingName;
     before(() => {
