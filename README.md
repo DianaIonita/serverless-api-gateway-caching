@@ -28,7 +28,7 @@ functions:
           caching:
             enabled: false # default is false
 
-  # Responses are cached based the 'pawId' path parameter and the 'Accept-Language' header
+  # Responses are cached based on the 'pawId' path parameter and the 'Accept-Language' header
   get-cat-by-paw-id:
     handler: rest_api/cat/get/handler.handle
     events:

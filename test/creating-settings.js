@@ -204,8 +204,40 @@ describe('Creating settings', () => {
       });
     });
   });
+
+  describe('when there are command line options for the deployment', () => {
+    let options;
+
+    describe('and they do not specify the stage', () => {
+      before(() => {
+        serverless = given.a_serverless_instance()
+          .forStage('devstage')
+          .withApiGatewayCachingConfig(true, '0.5', 45);
+
+        options = {}
+
+        cacheSettings = createSettingsFor(serverless, options);
+      });
+
+      it('should use the provider stage', () => {
+        expect(cacheSettings.stage).to.equal('devstage');
+      });
+    });
+
+    // describe('and they specify the stage', () => {
+    //   it('should use the stage from command line')
+    // });
+
+    // describe('and they do not specify the region', () => {
+    //   it('should use the provider region');
+    // });
+
+    // describe('and they specify the region', () => {
+    //   it('should use the region from command line');
+    // });
+  });
 });
 
-const createSettingsFor = serverless => {
-  return new ApiGatewayCachingSettings(serverless);
+const createSettingsFor = (serverless, options) => {
+  return new ApiGatewayCachingSettings(serverless, options);
 }

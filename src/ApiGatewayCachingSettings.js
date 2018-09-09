@@ -18,8 +18,8 @@ class ApiGatewayEndpointCachingSettings {
 }
 
 class ApiGatewayCachingSettings {
-  constructor(serverless) {
-    if (!get(serverless, "service.custom.apiGatewayCaching")) {
+  constructor(serverless, options) {
+    if (!get(serverless, 'service.custom.apiGatewayCaching')) {
       this.cachingEnabled = false;
       return;
     }
@@ -27,6 +27,15 @@ class ApiGatewayCachingSettings {
     if (!this.cachingEnabled) {
       return;
     }
+
+    if (options) {
+      this.stage = options.stage || serverless.service.provider.stage;
+      this.region = options.region || serverless.service.provider.region;
+    } else {
+      this.stage = serverless.service.provider.stage;
+      this.region = serverless.service.provider.region;
+    }
+
     this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds;
 
