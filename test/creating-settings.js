@@ -24,6 +24,32 @@ describe('Creating settings', () => {
     });
   });
 
+  describe('when the cluster size is omitted from Api Gateway caching settings', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should set the cache cluster size to the default', () => {
+      expect(cacheSettings.cacheClusterSize).to.equal('0.5');
+    });
+  });
+
+  describe('when the time to live is omitted from Api Gateway caching settings', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should set the cache time to live to the default', () => {
+      expect(cacheSettings.cacheTtlInSeconds).to.equal(3600);
+    });
+  });
+
   describe('when there are settings defined for Api Gateway caching', () => {
     before(() => {
       serverless = given.a_serverless_instance()

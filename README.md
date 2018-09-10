@@ -17,8 +17,8 @@ custom:
   # Enable or disable caching globally
   apiGatewayCaching:
     enabled: true
-    clusterSize: '0.5'
-    ttlInSeconds: 300
+    clusterSize: '0.5' # defaults to '0.5'
+    ttlInSeconds: 300 # defaults to the maximum allowed: 3600
 
 functions:
   # Responses are not cached

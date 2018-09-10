@@ -21,11 +21,6 @@ class ApiGatewayCachingPlugin {
   }
 
   updateCloudFormationTemplate() {
-    // if caching is not defined or disabled
-    if (!this.settings.cachingEnabled) {
-      return;
-    }
-
     let restApiId = {
       Ref: 'ApiGatewayRestApi',
     };
@@ -36,6 +31,11 @@ class ApiGatewayCachingPlugin {
       Description: 'Rest API Id',
       Value: restApiId,
     };
+    
+    // if caching is not defined or disabled
+    if (!this.settings.cachingEnabled) {
+      return;
+    }
 
     return addPathParametersCacheConfig(this.settings, this.serverless);
   }

@@ -19,6 +19,8 @@ class ApiGatewayEndpointCachingSettings {
 
 class ApiGatewayCachingSettings {
   constructor(serverless, options) {
+    const DEFAULT_CACHE_CLUSTER_SIZE = '0.5';
+    const DEFAULT_TTL = 3600;
     if (!get(serverless, 'service.custom.apiGatewayCaching')) {
       return;
     }
@@ -34,8 +36,8 @@ class ApiGatewayCachingSettings {
 
     this.endpointSettings = [];
 
-    this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
-    this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds;
+    this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
+    this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds || DEFAULT_TTL;
 
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
