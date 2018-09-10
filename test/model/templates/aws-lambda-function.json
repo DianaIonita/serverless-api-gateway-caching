@@ -1,0 +1,21 @@
+{
+  "Type": "AWS::Lambda::Function",
+  "Properties": {
+    "Code": {
+      "S3Bucket": {
+        "Ref": "ServerlessDeploymentBucket"
+      },
+      "S3Key": "serverless/cat-api/somestage/1536510170443-2018-09-09T16:22:50.443Z/cat-api.zip"
+    },
+    "FunctionName": "cat-api-somestage-list-all-cats",
+    "Handler": "rest_api/handler.handle",
+    "MemorySize": 1024,
+    "Runtime": "nodejs8.10",
+    "Timeout": 6,
+    "Environment": {
+      "Variables": {
+        "STAGE": "somestage"
+      }
+    }
+  }
+}
