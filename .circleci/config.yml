@@ -43,6 +43,7 @@ jobs:
           environment:
             MOCHA_FILE: ./test-results/mocha/results.xml
           command: npm run test
+      - *store_test_results
   
   live:
     <<: *container_config
