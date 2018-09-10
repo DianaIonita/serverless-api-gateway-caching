@@ -2,6 +2,12 @@ const chance = require('chance').Chance();
 
 class Serverless {
   constructor(serviceName) {
+    this._logMessages = [];
+    this.cli = {
+      log: (logMessage) => {
+        this._logMessages.push(logMessage);
+      }
+    };
     this.service = {
       service: serviceName,
       custom: {},
@@ -9,6 +15,9 @@ class Serverless {
         compiledCloudFormationTemplate: {
           Resources: []
         }
+      },
+      getFunction(functionName) {
+        return this.functions[functionName];
       }
     }
   }
@@ -53,6 +62,41 @@ class Serverless {
   getMethodResourceForFunction(functionName) {
     let { methodResourceName } = this._functionsToResourcesMapping[functionName];
     return this.service.provider.compiledCloudFormationTemplate.Resources[methodResourceName];
+  }
+
+  setRestApiId(restApiId, settings) {
+    this.providers = {
+      aws: {
+        naming: {
+          getStackName: (stage) => {
+            if (stage != settings.stage) {
+              throw new Error('[Serverless Test Model] Something went wrong getting the Stack Name');
+            }
+            return 'serverless-stack-name';
+          }
+        },
+        request: async (awsService, method, properties, stage, region) => {
+          if (awsService != 'CloudFormation'
+            || method != 'describeStacks'
+            || properties.StackName != 'serverless-stack-name'
+            || stage != settings.stage
+            || region != settings.region) {
+            throw new Error('[Serverless Test Model] Something went wrong getting the Rest Api Id');
+          }
+
+          return {
+            Stacks: [
+              {
+                Outputs: [{
+                  OutputKey: 'RestApiIdForApiGwCaching',
+                  OutputValue: restApiId
+                }]
+              }
+            ]
+          };
+        }
+      }
+    }
   }
 }
 

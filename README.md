@@ -3,6 +3,10 @@
 ## Intro
 A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.
 
+## Good to know
+If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
+However, disabling caching globally disables it across endpoints.
+
 ## Example
 
 ```yml
@@ -13,8 +17,8 @@ custom:
   # Enable or disable caching globally
   apiGatewayCaching:
     enabled: true
-    clusterSize: '0.5'
-    ttlInSeconds: 300
+    clusterSize: '0.5' # defaults to '0.5'
+    ttlInSeconds: 300 # defaults to the maximum allowed: 3600
 
 functions:
   # Responses are not cached
@@ -46,5 +50,7 @@ functions:
 ```
 
 ## Limitations
-Currently not supported:
-- lambda functions with many http events
+* For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
+
+## Currently not supported:
+* lambda functions with many http events

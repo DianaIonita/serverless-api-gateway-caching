@@ -11,16 +11,42 @@ describe('Creating settings', () => {
   let getMyCatFunctionName = 'get-my-cat';
 
   describe('when the input is invalid', () => {
-    it('should set caching to disabled', () => {
+    it('should set caching to undefined', () => {
       cacheSettings = createSettingsFor();
-      expect(cacheSettings.cachingEnabled).to.be.false;
+      expect(cacheSettings.cachingEnabled).to.be.undefined;
     });
   });
 
   describe('when there are no settings for Api Gateway caching', () => {
-    it('should set caching to disabled', () => {
+    it('should set caching to undefined', () => {
       cacheSettings = createSettingsFor(given.a_serverless_instance());
-      expect(cacheSettings.cachingEnabled).to.be.false;
+      expect(cacheSettings.cachingEnabled).to.be.undefined;
+    });
+  });
+
+  describe('when the cluster size is omitted from Api Gateway caching settings', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should set the cache cluster size to the default', () => {
+      expect(cacheSettings.cacheClusterSize).to.equal('0.5');
+    });
+  });
+
+  describe('when the time to live is omitted from Api Gateway caching settings', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should set the cache time to live to the default', () => {
+      expect(cacheSettings.cacheTtlInSeconds).to.equal(3600);
     });
   });
 
@@ -137,8 +163,8 @@ describe('Creating settings', () => {
         cacheSettings = createSettingsFor(serverless);
       });
 
-      it('caching should not be defined for the endpoint', () => {
-        expect(cacheSettings.endpointSettings).to.be.empty;
+      it('caching should be disabled for the endpoint', () => {
+        expect(cacheSettings.endpointSettings[0].cachingEnabled).to.be.false;
       });
     });
 
