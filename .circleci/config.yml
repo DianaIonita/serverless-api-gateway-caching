@@ -41,6 +41,7 @@ jobs:
       - *restore_npm_cache
       - run: npm install
       - *save_npm_cache
+      - *create_test_results_dir
       - run: npm run test -- --reporter mocha-junit-reporter
       - *store_test_results
   
