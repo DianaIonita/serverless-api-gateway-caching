@@ -1,12 +1,12 @@
 const isEmpty = require('lodash.isempty');
 const AWS = require('aws-sdk');
 
-const getRestApiId = async serverless => {
-  const stackName = serverless.providers.aws.naming.getStackName(serverless.service.provider.stage);
+const getRestApiId = async (settings, serverless) => {
+  const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
 
   let stack = await serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
-    serverless.service.provider.stage,
-    serverless.service.provider.region
+    settings.stage,
+    settings.region
   );
 
   return stack.Stacks[0].Outputs
@@ -80,10 +80,10 @@ const patchPathFor = (endpointSettings, serverless) => {
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
-  let restApiId = await getRestApiId(serverless);
+  let restApiId = await getRestApiId(settings, serverless);
 
   AWS.config.update({
-    region: serverless.service.custom.region,
+    region: settings.region,
   });
 
   let patchOps = createPatchForStage(settings);
@@ -94,7 +94,7 @@ const updateStageCacheSettings = async (settings, serverless) => {
   const apiGateway = new AWS.APIGateway();
   let params = {
     restApiId,
-    stageName: serverless.service.custom.stage,
+    stageName: settings.stage,
     patchOperations: patchOps
   }
 

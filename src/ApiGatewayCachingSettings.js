@@ -9,6 +9,7 @@ class ApiGatewayEndpointCachingSettings {
     let cachingConfig = functionSettings.events.filter(e => e.http != null)[0].http.caching;
     if (!cachingConfig) {
       this.cachingEnabled = false;
+      return;
     }
     this.cachingEnabled = cachingConfig.enabled;
     this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
@@ -17,16 +18,29 @@ class ApiGatewayEndpointCachingSettings {
 }
 
 class ApiGatewayCachingSettings {
-  constructor(serverless) {
-    if (!get(serverless, "service.custom.apiGatewayCaching")) {
+  constructor(serverless, options) {
+    if (!get(serverless, 'service.custom.apiGatewayCaching')) {
       this.cachingEnabled = false;
       return;
     }
     this.cachingEnabled = serverless.service.custom.apiGatewayCaching.enabled;
+
+    if (options) {
+      this.stage = options.stage || serverless.service.provider.stage;
+      this.region = options.region || serverless.service.provider.region;
+    } else {
+      this.stage = serverless.service.provider.stage;
+      this.region = serverless.service.provider.region;
+    }
+
+    this.endpointSettings = [];
+    if (!this.cachingEnabled) {
+      return;
+    }
+
     this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds;
 
-    this.endpointSettings = [];
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
       if (this.isApiGatewayEndpoint(functionSettings)) {

@@ -17,7 +17,7 @@ class ApiGatewayCachingPlugin {
   }
 
   createSettings() {
-    this.settings = new ApiGatewayCachingSettings(this.serverless);
+    this.settings = new ApiGatewayCachingSettings(this.serverless, this.options);
   }
 
   updateCloudFormationTemplate() {

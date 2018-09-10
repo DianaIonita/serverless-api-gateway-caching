@@ -20,8 +20,8 @@ const getResourceForLambdaFunctionNamed = (fullFunctionName, serverless) => {
   return lambdaResource[0];
 }
 
-const getApiGatewayMethodFor = (functionName, serverless) => {
-  const fullFunctionName = `${serverless.service.service}-${serverless.service.custom.stage}-${functionName}`;
+const getApiGatewayMethodFor = (functionName, stage, serverless) => {
+  const fullFunctionName = `${serverless.service.service}-${stage}-${functionName}`;
   const lambdaFunctionResource = getResourceForLambdaFunctionNamed(fullFunctionName, serverless);
 
   // returns the first method found which depends on this lambda
@@ -39,7 +39,7 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
     }
-    const method = getApiGatewayMethodFor(endpointSettings.functionName, serverless);
+    const method = getApiGatewayMethodFor(endpointSettings.functionName, settings.stage, serverless);
     if (!method.resource.Properties.Integration.CacheKeyParameters) {
       method.resource.Properties.Integration.CacheKeyParameters = [];
     }
