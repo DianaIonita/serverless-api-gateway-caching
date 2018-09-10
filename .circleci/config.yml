@@ -22,11 +22,12 @@ references:
   create_test_results_dir: &create_test_results_dir
     run: 
       command: |
-        mkdir ./test-results
+        mkdir test-results
+        mkdir test-results/mocha
         
   store_test_results: &store_test_results
     store_test_results:
-      path: ./test-results
+      path: test-results
 
 jobs:
   dev:
@@ -40,7 +41,7 @@ jobs:
       - *create_test_results_dir
       - run:
           environment:
-            MOCHA_FILE: ./test-results/test-results.xml
+            MOCHA_FILE: ./test-results/mocha/results.xml
           command: npm run test -- --reporter mocha-junit-reporter
       - *store_test_results
   
