@@ -20,7 +20,6 @@ class ApiGatewayEndpointCachingSettings {
 class ApiGatewayCachingSettings {
   constructor(serverless, options) {
     if (!get(serverless, 'service.custom.apiGatewayCaching')) {
-      this.cachingEnabled = false;
       return;
     }
     this.cachingEnabled = serverless.service.custom.apiGatewayCaching.enabled;

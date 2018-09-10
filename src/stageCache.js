@@ -31,18 +31,19 @@ const escapeJsonPointer = path => {
 }
 
 const createPatchForStage = (settings) => {
-  return [
-    {
-      op: 'replace',
-      path: '/cacheClusterEnabled',
-      value: `${settings.cachingEnabled}`
-    },
-    {
+  let patch = [{
+    op: 'replace',
+    path: '/cacheClusterEnabled',
+    value: `${settings.cachingEnabled}`
+  }]
+  if (settings.cachingEnabled) {
+    patch.push({
       op: 'replace',
       path: '/cacheClusterSize',
       value: `${settings.cacheClusterSize}`
-    }
-  ]
+    });
+  }
+  return patch;
 }
 
 const createPatchForEndpoint = (endpointSettings, serverless) => {
@@ -80,6 +81,11 @@ const patchPathFor = (endpointSettings, serverless) => {
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
+  // do nothing if caching settings are not defined
+  if (settings.cachingEnabled == undefined) {
+    return;
+  }
+
   let restApiId = await getRestApiId(settings, serverless);
 
   AWS.config.update({

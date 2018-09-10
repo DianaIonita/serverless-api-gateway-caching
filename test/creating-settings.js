@@ -11,16 +11,16 @@ describe('Creating settings', () => {
   let getMyCatFunctionName = 'get-my-cat';
 
   describe('when the input is invalid', () => {
-    it('should set caching to disabled', () => {
+    it('should set caching to undefined', () => {
       cacheSettings = createSettingsFor();
-      expect(cacheSettings.cachingEnabled).to.be.false;
+      expect(cacheSettings.cachingEnabled).to.be.undefined;
     });
   });
 
   describe('when there are no settings for Api Gateway caching', () => {
-    it('should set caching to disabled', () => {
+    it('should set caching to undefined', () => {
       cacheSettings = createSettingsFor(given.a_serverless_instance());
-      expect(cacheSettings.cachingEnabled).to.be.false;
+      expect(cacheSettings.cachingEnabled).to.be.undefined;
     });
   });
 

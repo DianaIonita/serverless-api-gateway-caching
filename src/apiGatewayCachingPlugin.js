@@ -21,6 +21,7 @@ class ApiGatewayCachingPlugin {
   }
 
   updateCloudFormationTemplate() {
+    // if caching is not defined or disabled
     if (!this.settings.cachingEnabled) {
       return;
     }
@@ -40,10 +41,6 @@ class ApiGatewayCachingPlugin {
   }
 
   updateStage() {
-    if (!this.settings.cachingEnabled) {
-      return;
-    }
-
     return updateStageCacheSettings(this.settings, this.serverless);
   }
 }
