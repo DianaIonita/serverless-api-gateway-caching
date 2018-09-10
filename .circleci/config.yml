@@ -1,0 +1,67 @@
+version: 2
+
+references:
+  container_config: &container_config
+    docker:
+      - image: circleci/node:8.10
+    environment:
+      MOCHA_FILE: ./test-results/unit/test-results.xml
+
+  poke_npmrc: &poke_npmrc
+    run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
+
+  restore_npm_cache: &restore_npm_cache
+    restore_cache:
+      keys:
+      - v1-dependencies-{{ checksum "package.json" }}
+      - v1-dependencies-
+
+  save_npm_cache: &save_npm_cache
+    save_cache:
+      paths:
+        - node_modules
+      key: v1-dependencies-{{ checksum "package.json" }}
+
+  create_test_results_dir: &create_test_results_dir
+    run: 
+      command: |
+        mkdir ./test-results
+        mkdir ./test-results/unit
+        
+  store_test_results: &store_test_results
+    store_test_results:
+      path: ./test-results
+
+jobs:
+  dev:
+    <<: *container_config
+    steps:
+      - *poke_npmrc
+      - checkout
+      - *restore_npm_cache
+      - run: npm install
+      - *save_npm_cache
+      - run: npm run test -- --reporter mocha-junit-reporter
+      - *store_test_results
+  
+  live:
+    <<: *container_config
+    steps:
+      - *poke_npmrc
+      - checkout
+      - *restore_npm_cache
+      - run: npm install
+      - *save_npm_cache
+      - run: npm publish
+
+workflows:
+  version: 2
+  build:
+    jobs:
+      - dev
+      - live:
+          requires:
+            - dev
+          filters:
+            branches:
+              only: master
