@@ -46,5 +46,8 @@ functions:
 ```
 
 ## Limitations
-Currently not supported:
-- lambda functions with many http events
+* 
+
+## Currently not supported:
+* lambda functions with many http events
+* http events with `method: any`
