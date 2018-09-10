@@ -15,6 +15,9 @@ class Serverless {
         compiledCloudFormationTemplate: {
           Resources: []
         }
+      },
+      getFunction(functionName) {
+        return this.functions[functionName];
       }
     }
   }

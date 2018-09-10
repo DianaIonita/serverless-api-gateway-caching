@@ -137,8 +137,8 @@ describe('Creating settings', () => {
         cacheSettings = createSettingsFor(serverless);
       });
 
-      it('caching should not be defined for the endpoint', () => {
-        expect(cacheSettings.endpointSettings).to.be.empty;
+      it('caching should be disabled for the endpoint', () => {
+        expect(cacheSettings.endpointSettings[0].cachingEnabled).to.be.false;
       });
     });
 

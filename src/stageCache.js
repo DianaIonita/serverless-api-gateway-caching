@@ -46,14 +46,13 @@ const createPatchForStage = (settings) => {
   return patch;
 }
 
-const createPatchForEndpoint = (endpointSettings, serverless) => {
-  const patchPath = patchPathFor(endpointSettings, serverless);
-  if (!patchPath) return [];
+const patchForMethod = (path, method, endpointSettings) => {
+  let patchPath = patchPathFor(path, method);
   let patch = [{
     op: 'replace',
     path: `/${patchPath}/caching/enabled`,
     value: `${endpointSettings.cachingEnabled}`
-  }]
+  }];
   if (endpointSettings.cachingEnabled) {
     patch.push({
       op: 'replace',
@@ -64,7 +63,7 @@ const createPatchForEndpoint = (endpointSettings, serverless) => {
   return patch;
 }
 
-const patchPathFor = (endpointSettings, serverless) => {
+const createPatchForEndpoint = (endpointSettings, serverless) => {
   let lambda = serverless.service.getFunction(endpointSettings.functionName);
   if (isEmpty(lambda.events)) {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined events.`);
@@ -75,8 +74,29 @@ const patchPathFor = (endpointSettings, serverless) => {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined any HTTP events.`);
   }
   let { path, method } = httpEvents[0].http;
+
+  let patch = [];
+  if (method.toUpperCase() == 'ANY') {
+    let httpMethodsToDisableCacheFor = ['DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']; // TODO could come from settings, vNext
+    for (let methodWithCacheDisabled of httpMethodsToDisableCacheFor) {
+      patch = patch.concat(patchForMethod(path, methodWithCacheDisabled,
+        { cachingEnabled: false }));
+    };
+
+    patch = patch.concat(patchForMethod(path, 'GET', endpointSettings));
+  }
+  else {
+    patch = patch.concat(patchForMethod(path, method, endpointSettings));
+  }
+  return patch;
+}
+
+const patchPathFor = (path, method) => {
   let escapedPath = escapeJsonPointer(path);
-  let patchPath = `~1${escapedPath}/${method.toUpperCase()}`;
+  if (!escapedPath.startsWith('~1')) {
+    escapedPath = `~1${escapedPath}`;
+  }
+  let patchPath = `${escapedPath}/${method.toUpperCase()}`;
   return patchPath;
 }
 
@@ -93,6 +113,12 @@ const updateStageCacheSettings = async (settings, serverless) => {
   });
 
   let patchOps = createPatchForStage(settings);
+  
+  let endpointsWithCachingEnabled = settings.endpointSettings.filter(e => e.cachingEnabled);
+  if (settings.cachingEnabled && isEmpty(endpointsWithCachingEnabled)) {
+    serverless.cli.log(`[serverless-api-gateway-caching] [WARNING] API Gateway caching is enabled but none of the endpoints have caching enabled`);
+  }
+
   for (let endpointSettings of settings.endpointSettings) {
     let endpointPatch = createPatchForEndpoint(endpointSettings, serverless);
     patchOps = patchOps.concat(endpointPatch);

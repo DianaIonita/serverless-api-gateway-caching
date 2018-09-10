@@ -11,7 +11,7 @@ class ApiGatewayEndpointCachingSettings {
       this.cachingEnabled = false;
       return;
     }
-    this.cachingEnabled = cachingConfig.enabled;
+    this.cachingEnabled = globalSettings.cachingEnabled ? cachingConfig.enabled : false;
     this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
     this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
   }
@@ -33,9 +33,6 @@ class ApiGatewayCachingSettings {
     }
 
     this.endpointSettings = [];
-    if (!this.cachingEnabled) {
-      return;
-    }
 
     this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds;
