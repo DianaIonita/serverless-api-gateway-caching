@@ -19,6 +19,16 @@ references:
         - node_modules
       key: v1-dependencies-{{ checksum "package.json" }}
 
+  create_test_results_dir: &create_test_results_dir
+    run: 
+      command: |
+        mkdir test-results
+        mkdir test-results/mocha
+        
+  store_test_results: &store_test_results
+    store_test_results:
+      path: test-results
+
 jobs:
   dev:
     <<: *container_config
@@ -28,7 +38,11 @@ jobs:
       - *restore_npm_cache
       - run: npm install
       - *save_npm_cache
-      - run: npm run test
+      - *create_test_results_dir
+      - run:
+          environment:
+            MOCHA_FILE: ./test-results/mocha/results.xml
+          command: npm run test
   
   live:
     <<: *container_config
