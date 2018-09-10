@@ -4,7 +4,7 @@
   "description": "A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.",
   "main": "src/apiGatewayCachingPlugin.js",
   "scripts": {
-    "test": "mocha --recursive test/**/*.js -t 5000"
+    "test": "mocha --recursive 'test/**/*.js' -t 5000"
   },
   "keywords": [
     "serverless",

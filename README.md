@@ -6,8 +6,12 @@
 A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.
 
 ## Good to know
-If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
+* If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
 However, disabling caching globally disables it across endpoints.
+* For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
+
+## Currently not supported:
+* lambda functions with many HTTP events
 
 ## Example
 
@@ -50,9 +54,3 @@ functions:
               - name: request.header.Accept-Language
                 required: false
 ```
-
-## Limitations
-* For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
-
-## Currently not supported:
-* lambda functions with many http events
