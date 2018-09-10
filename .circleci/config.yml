@@ -42,7 +42,7 @@ jobs:
       - run:
           environment:
             MOCHA_FILE: ./test-results/mocha/results.xml
-          command: npm run test
+          command: npm run test -- --reporter mocha-junit-reporter
       - *store_test_results
   
   live:
