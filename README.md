@@ -10,6 +10,13 @@ A plugin for the serverless framework which helps with configuring caching for A
 However, disabling caching globally disables it across endpoints.
 * For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
 
+## Per-key cache invalidation
+If you don't configure per-key cache invalidation authorization, by default it is required.
+You can configure how to handle unauthorized requests to invalidate a cache key using the options:
+* `Ignore` - which simply ignores the request to invalidate the cache key
+* `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response mentioning it
+* `Fail` - fails the request with a 403 response status code.
+
 ## Currently not supported:
 * lambda functions with many HTTP events
 
@@ -48,9 +55,10 @@ functions:
           caching:
             enabled: true
             ttlInSeconds: 3600
+            perKeyInvalidation:
+              requireAuthorization: true # default is true
+              handleUnauthorizedRequests: IgnoreWithWarning # default is "IgnoreWithWarning"
             cacheKeyParameters:
-              - name: request.path.pawId
-                required: true
-              - name: request.header.Accept-Language
-                required: false
+              - request.path.pawId
+              - request.header.Accept-Language
 ```
