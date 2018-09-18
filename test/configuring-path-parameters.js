@@ -52,9 +52,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('get', '/cats');
 
       functionWithCachingName = 'get-cat-by-paw-id';
-      cacheKeyParameters = [
-        { name: 'request.path.pawId', required: true },
-        { name: 'request.header.Accept-Language', required: false }];
+      cacheKeyParameters = ['request.path.pawId', 'request.header.Accept-Language'];
       let functionWithCaching = given.a_serverless_function(functionWithCachingName)
         .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, cacheKeyParameters });
 
@@ -73,20 +71,11 @@ describe('Configuring path parameter caching', () => {
         method = serverless.getMethodResourceForFunction(functionWithCachingName);
       });
 
-      it('should set whether request parameters are required', () => {
-        for (let parameter of cacheKeyParameters) {
-          expect(method.Properties.RequestParameters)
-            .to.deep.include({
-              [`method.${parameter.name}`]: parameter.required
-            });
-        }
-      });
-
       it('should set integration request parameters', () => {
         for (let parameter of cacheKeyParameters) {
           expect(method.Properties.Integration.RequestParameters)
             .to.deep.include({
-              [`integration.${parameter.name}`]: `method.${parameter.name}`
+              [`integration.${parameter}`]: `method.${parameter}`
             });
         }
       });
@@ -94,7 +83,7 @@ describe('Configuring path parameter caching', () => {
       it('should set integration cache key parameters', () => {
         for (let parameter of cacheKeyParameters) {
           expect(method.Properties.Integration.CacheKeyParameters)
-            .to.include(`method.${parameter.name}`);
+            .to.include(`method.${parameter}`);
         }
       });
 
