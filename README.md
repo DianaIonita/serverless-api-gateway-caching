@@ -8,15 +8,15 @@ A plugin for the serverless framework which helps with configuring caching for A
 ## Good to know
 * If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
 However, disabling caching globally disables it across endpoints.
-* The global settings for `ttlInSeconds` and `perKeyInvalidation` are inherited if they're not specified for each endpoint
+* If you don't specify `ttlInSeconds` and `perKeyInvalidation` for and endpoint which has caching enabled, these settings are inherited from global settings.
 * For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
 
 ## Per-key cache invalidation
-If you don't configure per-key cache invalidation authorization, by default it is required.
+If you don't configure per-key cache invalidation authorization, by default it is *required*.
 You can configure how to handle unauthorized requests to invalidate a cache key using the options:
-* `Ignore` - which simply ignores the request to invalidate the cache key.
+* `Ignore` - ignores the request to invalidate the cache key.
 * `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response.
-* `Fail` - fails the request with a 403 response status code.
+* `Fail` - fails the request to invalidate the cache key with a 403 response status code.
 
 ## Currently not supported:
 * lambda functions with many HTTP events.
@@ -35,7 +35,7 @@ custom:
     ttlInSeconds: 300 # defaults to the maximum allowed: 3600
     perKeyInvalidation:
       requireAuthorization: true # default is true
-      handleUnauthorizedRequests: IgnoreWithWarning
+      handleUnauthorizedRequests: IgnoreWithWarning # default is "IgnoreWithWarning"
 
 functions:
   # Responses are not cached
@@ -60,9 +60,9 @@ functions:
             enabled: true
             ttlInSeconds: 3600
             perKeyInvalidation:
-              requireAuthorization: true # default is true
-              handleUnauthorizedRequests: IgnoreWithWarning # default is "IgnoreWithWarning"
+              requireAuthorization: true
+              handleUnauthorizedRequests: Ignore
             cacheKeyParameters:
-              - request.path.pawId
-              - request.header.Accept-Language
+              - name: request.path.pawId
+              - name: request.header.Accept-Language
 ```

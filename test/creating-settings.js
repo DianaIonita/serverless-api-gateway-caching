@@ -344,7 +344,7 @@ describe('Creating settings', () => {
         before(() => {
           caching = {
             enabled: true,
-            cacheKeyParameters: ['request.path.pawId', 'request.header.Accept-Language']
+            cacheKeyParameters: [{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }]
           };
           endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
             .withHttpEndpoint('get', '/cat/{pawId}', caching);
@@ -355,7 +355,7 @@ describe('Creating settings', () => {
 
         it('should set cache key parameters', () => {
           expect(cacheSettings.endpointSettings[0].cacheKeyParameters)
-            .to.deep.equal(['request.path.pawId', 'request.header.Accept-Language']);
+            .to.deep.equal([{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }]);
         });
       });
 
