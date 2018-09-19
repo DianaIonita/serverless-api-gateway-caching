@@ -1,6 +1,7 @@
 const APP_ROOT = '..';
 const given = require(`${APP_ROOT}/test/steps/given`);
 const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
+const UnauthorizedCacheControlHeaderStrategy = require(`${APP_ROOT}/src/UnauthorizedCacheControlHeaderStrategy`);
 const expect = require('chai').expect;
 
 describe('Creating settings', () => {
@@ -50,24 +51,153 @@ describe('Creating settings', () => {
     });
   });
 
-  describe('when there are settings defined for Api Gateway caching', () => {
+  describe('when per-key invalidation settings are omitted from Api Gateway caching settings', () => {
     before(() => {
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true, '0.5', 45);
+        .withApiGatewayCachingConfig(true);
 
       cacheSettings = createSettingsFor(serverless);
     });
 
-    it('should set caching enabled', () => {
-      expect(cacheSettings.cachingEnabled).to.be.true;
+    it('should set that cache invalidation requires authorization', () => {
+      expect(cacheSettings.perKeyInvalidation.requireAuthorization).to.be.true;
     });
 
-    it('should set cluster size', () => {
-      expect(cacheSettings.cacheClusterSize).to.equal('0.5');
+    it('should set the strategy to ignore unauthorized invalidation requests with a warning', () => {
+      expect(cacheSettings.perKeyInvalidation.handleUnauthorizedRequests)
+        .to.equal(UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning);
     });
+  });
 
-    it('should set time to live', () => {
-      expect(cacheSettings.cacheTtlInSeconds).to.equal(45);
+  describe('when settings are defined for Api Gateway caching', () => {
+    let scenarios = [
+      {
+        description: 'and per key cache invalidation does not require authorization',
+        serverless: given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '0.5', 45,
+            { requireAuthorization: false }),
+        expectedCacheSettings: {
+          cachingEnabled: true,
+          cacheClusterSize: '0.5',
+          cacheTtlInSeconds: 45,
+          perKeyInvalidation: {
+            requireAuthorization: false
+          }
+        }
+      },
+      {
+        description: 'and the strategy to handle unauthorized invalidation requests is to ignore',
+        serverless: given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '0.5', 45,
+            { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' }),
+        expectedCacheSettings: {
+          cachingEnabled: true,
+          cacheClusterSize: '0.5',
+          cacheTtlInSeconds: 45,
+          perKeyInvalidation: {
+            requireAuthorization: true,
+            handleUnauthorizedRequests: UnauthorizedCacheControlHeaderStrategy.Ignore
+          }
+        }
+      },
+      {
+        description: 'and the strategy to handle unauthorized invalidation requests is to ignore with a warning',
+        serverless: given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '0.5', 45,
+            { requireAuthorization: true, handleUnauthorizedRequests: 'IgnoreWithWarning' }),
+        expectedCacheSettings: {
+          cachingEnabled: true,
+          cacheClusterSize: '0.5',
+          cacheTtlInSeconds: 45,
+          perKeyInvalidation: {
+            requireAuthorization: true,
+            handleUnauthorizedRequests: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+          }
+        }
+      },
+      {
+        description: 'and the strategy to handle unauthorized invalidation requests is to ignore with a warning',
+        serverless: given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '0.5', 45,
+            { requireAuthorization: true, handleUnauthorizedRequests: 'IgnoreWithWarning' }),
+        expectedCacheSettings: {
+          cachingEnabled: true,
+          cacheClusterSize: '0.5',
+          cacheTtlInSeconds: 45,
+          perKeyInvalidation: {
+            requireAuthorization: true,
+            handleUnauthorizedRequests: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+          }
+        }
+      },
+      {
+        description: 'and the strategy to handle unauthorized invalidation requests is to fail the request',
+        serverless: given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '0.5', 45,
+            { requireAuthorization: true, handleUnauthorizedRequests: 'Fail' }),
+        expectedCacheSettings: {
+          cachingEnabled: true,
+          cacheClusterSize: '0.5',
+          cacheTtlInSeconds: 45,
+          perKeyInvalidation: {
+            requireAuthorization: true,
+            handleUnauthorizedRequests: UnauthorizedCacheControlHeaderStrategy.Fail
+          }
+        }
+      },
+      {
+        description: 'and the strategy to handle unauthorized invalidation requests is not set',
+        serverless: given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '1', 45,
+            { requireAuthorization: true }),
+        expectedCacheSettings: {
+          cachingEnabled: true,
+          cacheClusterSize: '1',
+          cacheTtlInSeconds: 45,
+          perKeyInvalidation: {
+            requireAuthorization: true,
+            handleUnauthorizedRequests: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+          }
+        }
+      }
+    ];
+
+    for (let scenario of scenarios) {
+      describe(scenario.description, () => {
+        before(() => {
+          serverless = given.a_serverless_instance()
+            .withApiGatewayCachingConfig(true, '0.5', 45,
+              { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' });
+
+          cacheSettings = createSettingsFor(scenario.serverless);
+        });
+
+        it('should set whether caching is enabled', () => {
+          expect(cacheSettings.cachingEnabled).to.deep.equal(scenario.expectedCacheSettings.cachingEnabled);
+        });
+
+        it('should set cache cluster size', () => {
+          expect(cacheSettings.cacheClusterSize).to.deep.equal(scenario.expectedCacheSettings.cacheClusterSize);
+        });
+
+        it('should set cache time to live', () => {
+          expect(cacheSettings.cacheTtlInSeconds).to.deep.equal(scenario.expectedCacheSettings.cacheTtlInSeconds);
+        });
+
+        it('should set per key invalidation settings correctly', () => {
+          expect(cacheSettings.perKeyInvalidation).to.deep.equal(scenario.expectedCacheSettings.perKeyInvalidation);
+        });
+      });
+    }
+  });
+
+  describe('when there are settings defined for Api Gateway caching', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true, '0.5', 45,
+          { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' });
+
+      cacheSettings = createSettingsFor(serverless);
     });
 
     describe('and there are functions', () => {
@@ -171,7 +301,8 @@ describe('Creating settings', () => {
     describe('and caching is turned on globally', () => {
       before(() => {
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '1', 20);
+          .withApiGatewayCachingConfig(true, '1', 20,
+            { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' });
       });
 
       describe('and only the fact that caching is enabled is specified', () => {
@@ -213,9 +344,7 @@ describe('Creating settings', () => {
         before(() => {
           caching = {
             enabled: true,
-            cacheKeyParameters: [
-              { name: 'request.path.pawId', required: true },
-              { name: 'request.header.Accept-Language', required: false }]
+            cacheKeyParameters: [{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }]
           };
           endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
             .withHttpEndpoint('get', '/cat/{pawId}', caching);
@@ -225,9 +354,102 @@ describe('Creating settings', () => {
         });
 
         it('should set cache key parameters', () => {
-          expect(cacheSettings.endpointSettings[0].cacheKeyParameters).to.deep.equal(caching.cacheKeyParameters);
+          expect(cacheSettings.endpointSettings[0].cacheKeyParameters)
+            .to.deep.equal([{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }]);
         });
       });
+
+      let scenarios = [
+        {
+          description: 'and it is configured to handle unauthorized invalidation requests by ignoring them with a warning',
+          caching: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true,
+              handleUnauthorizedRequests: 'IgnoreWithWarning'
+            }
+          },
+          expectedCacheInvalidationRequiresAuthorization: true,
+          expectedCacheInvalidationStrategy: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+        },
+        {
+          description: 'and it is configured to handle unauthorized invalidation requests by ignoring them',
+          caching: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true,
+              handleUnauthorizedRequests: 'Ignore'
+            }
+          },
+          expectedCacheInvalidationRequiresAuthorization: true,
+          expectedCacheInvalidationStrategy: UnauthorizedCacheControlHeaderStrategy.Ignore
+        },
+        {
+          description: 'and it is configured to handle unauthorized invalidation requests by failing the request',
+          caching: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true,
+              handleUnauthorizedRequests: 'Fail'
+            }
+          },
+          expectedCacheInvalidationRequiresAuthorization: true,
+          expectedCacheInvalidationStrategy: UnauthorizedCacheControlHeaderStrategy.Fail
+        },
+        {
+          description: 'and the strategy for handling unauthorized invalidation requests is not defined',
+          caching: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true
+            }
+          },
+          expectedCacheInvalidationRequiresAuthorization: true,
+          expectedCacheInvalidationStrategy: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+        },
+        {
+          description: 'and it is configured to not require cache control authorization',
+          caching: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: false
+            }
+          },
+          expectedCacheInvalidationRequiresAuthorization: false,
+          expectedCacheInvalidationStrategy: undefined
+        },
+        {
+          description: 'and cache control authorization is not configured',
+          caching: {
+            enabled: true
+          },
+          // defaults to global settings
+          expectedCacheInvalidationRequiresAuthorization: true,
+          expectedCacheInvalidationStrategy: UnauthorizedCacheControlHeaderStrategy.Ignore
+        }
+      ];
+
+      for (let scenario of scenarios) {
+        describe(scenario.description, () => {
+          before(() => {
+            endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
+              .withHttpEndpoint('get', '/cat/{pawId}', scenario.caching);
+            serverless = serverless.withFunction(endpoint);
+
+            cacheSettings = createSettingsFor(serverless);
+          });
+
+          it('should set per-key cache invalidation authorization', () => {
+            expect(cacheSettings.endpointSettings[0].perKeyInvalidation.requireAuthorization)
+              .to.equal(scenario.expectedCacheInvalidationRequiresAuthorization)
+          });
+
+          it('should set the strategy to handle unauthorized cache invalidation requests', () => {
+            expect(cacheSettings.endpointSettings[0].perKeyInvalidation.handleUnauthorizedRequests)
+              .to.equal(scenario.expectedCacheInvalidationStrategy);
+          });
+        });
+      }
     });
   });
 

@@ -3,6 +3,7 @@ const given = require(`${APP_ROOT}/test/steps/given`);
 const teardown = require(`${APP_ROOT}/test/steps/teardown`);
 const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
 const updateStageCacheSettings = require(`${APP_ROOT}/src/stageCache`);
+const UnauthorizedCacheControlHeaderStrategy = require(`${APP_ROOT}/src/UnauthorizedCacheControlHeaderStrategy`);
 const expect = require('chai').expect;
 
 describe('Updating stage cache settings', () => {
@@ -199,6 +200,156 @@ describe('Updating stage cache settings', () => {
           });
         });
       });
+    });
+
+    describe('and one endpoint has caching settings', () => {
+      let scenarios = [
+        {
+          description: 'with per-key cache invalidation authorization disabled',
+          endpointCachingSettings: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: false
+            }
+          },
+          expectedPatchForAuth: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/requireAuthorizationForCacheControl',
+            value: 'false'
+          }
+        },
+        {
+          description: 'with per-key cache invalidation authorization enabled',
+          endpointCachingSettings: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true
+            }
+          },
+          expectedPatchForAuth: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/requireAuthorizationForCacheControl',
+            value: 'true'
+          },
+          expectedPatchForUnauthorizedStrategy: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/unauthorizedCacheControlHeaderStrategy',
+            value: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+          }
+        },
+        {
+          description: 'with the strategy to ignore unauthorized cache invalidation requests',
+          endpointCachingSettings: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true,
+              handleUnauthorizedRequests: 'Ignore'
+            }
+          },
+          expectedPatchForAuth: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/requireAuthorizationForCacheControl',
+            value: 'true'
+          },
+          expectedPatchForUnauthorizedStrategy: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/unauthorizedCacheControlHeaderStrategy',
+            value: UnauthorizedCacheControlHeaderStrategy.Ignore
+          }
+        },
+        {
+          description: 'with the strategy to ignore unauthorized cache invalidation requests with a warning header',
+          endpointCachingSettings: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true,
+              handleUnauthorizedRequests: 'IgnoreWithWarning'
+            }
+          },
+          expectedPatchForAuth: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/requireAuthorizationForCacheControl',
+            value: 'true'
+          },
+          expectedPatchForUnauthorizedStrategy: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/unauthorizedCacheControlHeaderStrategy',
+            value: UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning
+          }
+        },
+        {
+          description: 'with the strategy to fail unauthorized cache invalidation requests',
+          endpointCachingSettings: {
+            enabled: true,
+            perKeyInvalidation: {
+              requireAuthorization: true,
+              handleUnauthorizedRequests: 'Fail'
+            }
+          },
+          expectedPatchForAuth: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/requireAuthorizationForCacheControl',
+            value: 'true'
+          },
+          expectedPatchForUnauthorizedStrategy: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/unauthorizedCacheControlHeaderStrategy',
+            value: UnauthorizedCacheControlHeaderStrategy.Fail
+          }
+        },
+        {
+          description: 'without per-key cache invalidation settings',
+          endpointCachingSettings: {
+            enabled: true
+          },
+          // inherited from global settings
+          expectedPatchForAuth: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/requireAuthorizationForCacheControl',
+            value: 'true'
+          },
+          expectedPatchForUnauthorizedStrategy: {
+            op: 'replace',
+            path: '/~1personal~1cat/GET/caching/unauthorizedCacheControlHeaderStrategy',
+            value: UnauthorizedCacheControlHeaderStrategy.Ignore
+          }
+        }
+      ];
+
+      for (let scenario of scenarios) {
+        describe(scenario.description, () => {
+          before(async () => {
+            given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
+
+            let endpoint = given.a_serverless_function('get-my-cat')
+              .withHttpEndpoint('get', '/personal/cat', scenario.endpointCachingSettings);
+            serverless = given.a_serverless_instance()
+              .withApiGatewayCachingConfig(true, '0.5', 60,
+                { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' })
+              .withFunction(endpoint)
+              .forStage('somestage');
+            settings = new ApiGatewayCachingSettings(serverless);
+
+            restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
+
+            await when_updating_stage_cache_settings(settings, serverless);
+          });
+
+          after(() => {
+            teardown.unmock_aws_sdk();
+          });
+
+          it('should set whether the endpoint requires authorization for cache control', () => {
+            expect(recordedParams.patchOperations).to.deep.include(scenario.expectedPatchForAuth);
+          });
+
+          if (scenario.expectedPatchForUnauthorizedStrategy) {
+            it('should set the strategy for unauthorized requests to invalidate cache', () => {
+              expect(recordedParams.patchOperations).to.deep.include(scenario.expectedPatchForUnauthorizedStrategy);
+            });
+          }
+        });
+      }
     });
   });
 

@@ -60,6 +60,20 @@ const patchForMethod = (path, method, endpointSettings) => {
       value: `${endpointSettings.cacheTtlInSeconds}`
     })
   }
+  if (endpointSettings.perKeyInvalidation) {
+    patch.push({
+      op: 'replace',
+      path: `/${patchPath}/caching/requireAuthorizationForCacheControl`,
+      value: `${endpointSettings.perKeyInvalidation.requireAuthorization}`
+    });
+    if (endpointSettings.perKeyInvalidation.requireAuthorization) {
+      patch.push({
+        op: 'replace',
+        path: `/${patchPath}/caching/unauthorizedCacheControlHeaderStrategy`,
+        value: `${endpointSettings.perKeyInvalidation.handleUnauthorizedRequests}`
+      });
+    }
+  }
   return patch;
 }
 
@@ -113,7 +127,7 @@ const updateStageCacheSettings = async (settings, serverless) => {
   });
 
   let patchOps = createPatchForStage(settings);
-  
+
   let endpointsWithCachingEnabled = settings.endpointSettings.filter(e => e.cachingEnabled);
   if (settings.cachingEnabled && isEmpty(endpointsWithCachingEnabled)) {
     serverless.cli.log(`[serverless-api-gateway-caching] [WARNING] API Gateway caching is enabled but none of the endpoints have caching enabled`);
