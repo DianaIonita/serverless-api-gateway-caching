@@ -1,41 +1,45 @@
 const isEmpty = require('lodash.isempty');
 const get = require('lodash.get');
-const UnauthorizedCacheControlHeaderStrategy = require('./UnauthorizedCacheControlHeaderStrategy');
+const { Ignore, IgnoreWithWarning, Fail } = require('./UnauthorizedCacheControlHeaderStrategy');
 
 const DEFAULT_CACHE_CLUSTER_SIZE = '0.5';
 const DEFAULT_TTL = 3600;
-const DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY = UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning;
+const DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY = IgnoreWithWarning;
 
 const mapUnauthorizedRequestStrategy = strategy => {
   if (!strategy) {
     return DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY;
   }
   switch (strategy.toLowerCase()) {
-    case 'ignore': return UnauthorizedCacheControlHeaderStrategy.Ignore;
-    case 'ignorewithwarning': return UnauthorizedCacheControlHeaderStrategy.IgnoreWithWarning;
-    case 'fail': return UnauthorizedCacheControlHeaderStrategy.Fail;
+    case 'ignore': return Ignore;
+    case 'ignorewithwarning': return IgnoreWithWarning;
+    case 'fail': return Fail;
     default: return DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY;
   }
 }
 
-const perKeyInvalidationSettingsFrom = cachingSettings => {
-  let result;
-  let { perKeyInvalidation } = cachingSettings;
-  if (!perKeyInvalidation) {
-    return {
-      requireAuthorization: true,
-      handleUnauthorizedRequests: DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY
+const isApiGatewayEndpoint = functionSettings => {
+  if (isEmpty(functionSettings.events)) {
+    return false;
+  }
+  return functionSettings.events.filter(e => e.http != null).length > 0;
+}
+
+class PerKeyInvalidationSettings {
+  constructor(cachingSettings) {
+    let { perKeyInvalidation } = cachingSettings;
+    if (!perKeyInvalidation) {
+      this.requireAuthorization = true;
+      this.handleUnauthorizedRequests = DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY;
+    }
+    else {
+      this.requireAuthorization = perKeyInvalidation.requireAuthorization
+      if (perKeyInvalidation.requireAuthorization) {
+        this.handleUnauthorizedRequests =
+          mapUnauthorizedRequestStrategy(perKeyInvalidation.handleUnauthorizedRequests);
+      }
     }
   }
-  result = {
-    requireAuthorization: perKeyInvalidation.requireAuthorization
-  };
-  if (perKeyInvalidation.requireAuthorization) {
-    result.handleUnauthorizedRequests =
-      mapUnauthorizedRequestStrategy(perKeyInvalidation.handleUnauthorizedRequests);
-  }
-
-  return result;
 }
 
 class ApiGatewayEndpointCachingSettings {
@@ -55,7 +59,7 @@ class ApiGatewayEndpointCachingSettings {
     if (!cachingConfig.perKeyInvalidation) {
       this.perKeyInvalidation = globalSettings.perKeyInvalidation;
     } else {
-      this.perKeyInvalidation = perKeyInvalidationSettingsFrom(cachingConfig);
+      this.perKeyInvalidation = new PerKeyInvalidationSettings(cachingConfig);
     }
   }
 }
@@ -80,21 +84,14 @@ class ApiGatewayCachingSettings {
     this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds || DEFAULT_TTL;
 
-    this.perKeyInvalidation = perKeyInvalidationSettingsFrom(serverless.service.custom.apiGatewayCaching);
+    this.perKeyInvalidation = new PerKeyInvalidationSettings(serverless.service.custom.apiGatewayCaching);
 
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
-      if (this.isApiGatewayEndpoint(functionSettings)) {
+      if (isApiGatewayEndpoint(functionSettings)) {
         this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionName, functionSettings, this))
       }
     }
-  }
-
-  isApiGatewayEndpoint(functionSettings) {
-    if (isEmpty(functionSettings.events)) {
-      return false;
-    }
-    return functionSettings.events.filter(e => e.http != null).length > 0;
   }
 }
 
