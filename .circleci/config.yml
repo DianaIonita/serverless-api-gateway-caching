@@ -4,9 +4,6 @@ references:
   container_config: &container_config
     docker:
       - image: circleci/node:8.10
-    environment:
-      MOCHA_FILE: ./test-results/unit/test-results.xml
-
   poke_npmrc: &poke_npmrc
     run: echo "//registry.npmjs.org/:_authToken=$NPM_TOKEN" >> ~/.npmrc
 
@@ -25,12 +22,12 @@ references:
   create_test_results_dir: &create_test_results_dir
     run: 
       command: |
-        mkdir ./test-results
-        mkdir ./test-results/unit
+        mkdir test-results
+        mkdir test-results/mocha
         
   store_test_results: &store_test_results
     store_test_results:
-      path: ./test-results
+      path: test-results
 
 jobs:
   dev:
@@ -41,7 +38,11 @@ jobs:
       - *restore_npm_cache
       - run: npm install
       - *save_npm_cache
-      - run: npm run test -- --reporter mocha-junit-reporter
+      - *create_test_results_dir
+      - run:
+          environment:
+            MOCHA_FILE: ./test-results/mocha/results.xml
+          command: npm run test -- --reporter mocha-junit-reporter
       - *store_test_results
   
   live:
