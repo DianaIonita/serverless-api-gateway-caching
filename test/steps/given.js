@@ -21,6 +21,5 @@ const a_rest_api_id_for_deployment = async (serverless, settings) => {
 module.exports = {
   a_serverless_instance,
   a_serverless_function,
-  api_gateway_update_stage_is_mocked,
   a_rest_api_id_for_deployment
 }
