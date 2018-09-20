@@ -1,5 +1,4 @@
 const isEmpty = require('lodash.isempty');
-const AWS = require('aws-sdk');
 
 const getRestApiId = async (settings, serverless) => {
   const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
@@ -122,10 +121,6 @@ const updateStageCacheSettings = async (settings, serverless) => {
 
   let restApiId = await getRestApiId(settings, serverless);
 
-  AWS.config.update({
-    region: settings.region,
-  });
-
   let patchOps = createPatchForStage(settings);
 
   let endpointsWithCachingEnabled = settings.endpointSettings.filter(e => e.cachingEnabled);
@@ -137,7 +132,6 @@ const updateStageCacheSettings = async (settings, serverless) => {
     let endpointPatch = createPatchForEndpoint(endpointSettings, serverless);
     patchOps = patchOps.concat(endpointPatch);
   }
-  const apiGateway = new AWS.APIGateway();
   let params = {
     restApiId,
     stageName: settings.stage,
@@ -145,7 +139,7 @@ const updateStageCacheSettings = async (settings, serverless) => {
   }
 
   serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
-  await apiGateway.updateStage(params).promise();
+  await serverless.providers.aws.request('APIGateway', 'updateStage', params, settings.stage, settings.region);
   serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
 }
 
