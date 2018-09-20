@@ -1,6 +1,5 @@
 const APP_ROOT = '..';
 const given = require(`${APP_ROOT}/test/steps/given`);
-const teardown = require(`${APP_ROOT}/test/steps/teardown`);
 const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
 const updateStageCacheSettings = require(`${APP_ROOT}/src/stageCache`);
 const UnauthorizedCacheControlHeaderStrategy = require(`${APP_ROOT}/src/UnauthorizedCacheControlHeaderStrategy`);
@@ -43,10 +42,6 @@ describe('Updating stage cache settings', () => {
     it('should send a single request to AWS SDK to update stage', () => {
       request = requestsToAws.filter(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
       expect(request).to.have.lengthOf(1);
-    });
-
-    after(() => {
-      teardown.unmock_aws_sdk();
     });
 
     describe('the request sent to AWS SDK to update stage', () => {
@@ -97,10 +92,6 @@ describe('Updating stage cache settings', () => {
         await when_updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
-      });
-
-      after(() => {
-        teardown.unmock_aws_sdk();
       });
 
       describe('the request sent to AWS SDK to update stage', () => {
@@ -161,10 +152,6 @@ describe('Updating stage cache settings', () => {
         await when_updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
-      });
-
-      after(() => {
-        teardown.unmock_aws_sdk();
       });
 
       describe('the request sent to AWS SDK to update stage', () => {
@@ -366,10 +353,6 @@ describe('Updating stage cache settings', () => {
             apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
           });
 
-          after(() => {
-            teardown.unmock_aws_sdk();
-          });
-
           it('should set whether the endpoint requires authorization for cache control', () => {
             expect(apiGatewayRequest.properties.patchOperations).to.deep.include(scenario.expectedPatchForAuth);
           });
@@ -401,10 +384,6 @@ describe('Updating stage cache settings', () => {
 
       requestsToAws = serverless.getRequestsToAws();
       apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
-    });
-
-    after(() => {
-      teardown.unmock_aws_sdk();
     });
 
     it('should enable caching for the GET method', () => {
@@ -452,10 +431,6 @@ describe('Updating stage cache settings', () => {
 
       requestsToAws = serverless.getRequestsToAws();
       apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
-    });
-
-    after(() => {
-      teardown.unmock_aws_sdk();
     });
 
     let allMethods = ['GET', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'];
