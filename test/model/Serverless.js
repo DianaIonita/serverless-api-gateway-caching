@@ -3,6 +3,7 @@ const chance = require('chance').Chance();
 class Serverless {
   constructor(serviceName) {
     this._logMessages = [];
+    this._recordedAwsRequests = []
     this.cli = {
       log: (logMessage) => {
         this._logMessages.push(logMessage);
@@ -77,27 +78,30 @@ class Serverless {
           }
         },
         request: async (awsService, method, properties, stage, region) => {
-          if (awsService != 'CloudFormation'
-            || method != 'describeStacks'
-            || properties.StackName != 'serverless-stack-name'
-            || stage != settings.stage
-            || region != settings.region) {
-            throw new Error('[Serverless Test Model] Something went wrong getting the Rest Api Id');
+          this._recordedAwsRequests.push({ awsService, method, properties, stage, region });
+          if (awsService == 'CloudFormation'
+            && method == 'describeStacks'
+            && properties.StackName == 'serverless-stack-name'
+            && stage == settings.stage
+            && region == settings.region) {
+            return {
+              Stacks: [
+                {
+                  Outputs: [{
+                    OutputKey: 'RestApiIdForApiGwCaching',
+                    OutputValue: restApiId
+                  }]
+                }
+              ]
+            };
           }
-
-          return {
-            Stacks: [
-              {
-                Outputs: [{
-                  OutputKey: 'RestApiIdForApiGwCaching',
-                  OutputValue: restApiId
-                }]
-              }
-            ]
-          };
         }
       }
     }
+  }
+
+  getRequestsToAws() {
+    return this._recordedAwsRequests;
   }
 }
 

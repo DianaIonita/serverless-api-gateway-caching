@@ -1,57 +1,73 @@
 const APP_ROOT = '..';
 const given = require(`${APP_ROOT}/test/steps/given`);
-const teardown = require(`${APP_ROOT}/test/steps/teardown`);
 const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
 const updateStageCacheSettings = require(`${APP_ROOT}/src/stageCache`);
 const UnauthorizedCacheControlHeaderStrategy = require(`${APP_ROOT}/src/UnauthorizedCacheControlHeaderStrategy`);
 const expect = require('chai').expect;
 
 describe('Updating stage cache settings', () => {
-  let serverless, settings, recordedParams;
+  let serverless, settings, requestsToAws, apiGatewayRequest;
+  const apiGatewayService = 'APIGateway', updateStageMethod = 'updateStage';
 
   describe('When api gateway caching is not specified as a setting', () => {
     before(async () => {
-      given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
       serverless = given.a_serverless_instance();
       settings = new ApiGatewayCachingSettings(serverless);
       await when_updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
     });
 
     it('should not make calls to the AWS SDK', () => {
-      expect(recordedParams).to.not.exist;
+      expect(requestsToAws).to.be.empty;
     });
   });
 
   describe('When api gateway caching is disabled', () => {
     let restApiId;
     before(async () => {
-      given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
       serverless = given.a_serverless_instance()
         .withApiGatewayCachingConfig(false)
+        .forRegion('someregion')
         .forStage('somestage');
       settings = new ApiGatewayCachingSettings(serverless);
 
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
       await when_updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
     });
 
-    after(() => {
-      teardown.unmock_aws_sdk();
+    it('should send a single request to AWS SDK to update stage', () => {
+      request = requestsToAws.filter(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+      expect(request).to.have.lengthOf(1);
     });
 
     describe('the request sent to AWS SDK to update stage', () => {
+      before(() => {
+        apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+      });
+
+      it('should contain the stage', () => {
+        expect(apiGatewayRequest.stage).to.equal('somestage');
+      });
+
+      it('should contain the region', () => {
+        expect(apiGatewayRequest.region).to.equal('someregion');
+      });
+
       it('should contain the Rest Api Id', () => {
-        expect(recordedParams.restApiId).to.equal(restApiId);
+        expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
       });
 
       it('should contain the stage name', () => {
-        expect(recordedParams.stageName).to.equal('somestage');
+        expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
       });
 
       it('should disable caching', () => {
-        expect(recordedParams.patchOperations).to.have.lengthOf(1);
-        let patch = recordedParams.patchOperations[0];
+        expect(apiGatewayRequest.properties.patchOperations).to.have.lengthOf(1);
+        let patch = apiGatewayRequest.properties.patchOperations[0];
         expect(patch).to.deep.equal({
           op: 'replace',
           path: '/cacheClusterEnabled',
@@ -66,7 +82,6 @@ describe('Updating stage cache settings', () => {
 
     describe('and there are no endpoints for which to enable caching', () => {
       before(async () => {
-        given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
         serverless = given.a_serverless_instance()
           .withApiGatewayCachingConfig(true, '0.5', 60)
           .forStage('somestage');
@@ -75,27 +90,29 @@ describe('Updating stage cache settings', () => {
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
         await when_updating_stage_cache_settings(settings, serverless);
-      });
 
-      after(() => {
-        teardown.unmock_aws_sdk();
+        requestsToAws = serverless.getRequestsToAws();
       });
 
       describe('the request sent to AWS SDK to update stage', () => {
+        before(() => {
+          apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+        });
+
         it('should contain the Rest Api Id', () => {
-          expect(recordedParams.restApiId).to.equal(restApiId);
+          expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
         });
 
         it('should contain the stage name', () => {
-          expect(recordedParams.stageName).to.equal('somestage');
+          expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
         });
 
         it('should specify exactly two patch operations', () => {
-          expect(recordedParams.patchOperations).to.have.lengthOf(2);
+          expect(apiGatewayRequest.properties.patchOperations).to.have.lengthOf(2);
         })
 
         it('should enable caching', () => {
-          expect(recordedParams.patchOperations).to.deep.include({
+          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
             op: 'replace',
             path: '/cacheClusterEnabled',
             value: 'true'
@@ -103,7 +120,7 @@ describe('Updating stage cache settings', () => {
         });
 
         it('should set the cache cluster size', () => {
-          expect(recordedParams.patchOperations).to.deep.include({
+          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
             op: 'replace',
             path: '/cacheClusterSize',
             value: '0.5'
@@ -119,8 +136,6 @@ describe('Updating stage cache settings', () => {
 
     describe('and there are some endpoints with caching enabled', () => {
       before(async () => {
-        given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
-
         let endpointWithoutCaching = given.a_serverless_function('get-my-cat')
           .withHttpEndpoint('get', '/personal/cat', { enabled: false });
         let endpointWithCaching = given.a_serverless_function('get-cat-by-paw-id')
@@ -135,23 +150,25 @@ describe('Updating stage cache settings', () => {
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
         await when_updating_stage_cache_settings(settings, serverless);
-      });
 
-      after(() => {
-        teardown.unmock_aws_sdk();
+        requestsToAws = serverless.getRequestsToAws();
       });
 
       describe('the request sent to AWS SDK to update stage', () => {
+        before(() => {
+          apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+        });
+
         it('should contain the Rest Api Id', () => {
-          expect(recordedParams.restApiId).to.equal(restApiId);
+          expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
         });
 
         it('should contain the stage name', () => {
-          expect(recordedParams.stageName).to.equal('somestage');
+          expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
         });
 
         it('should enable caching', () => {
-          expect(recordedParams.patchOperations).to.deep.include({
+          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
             op: 'replace',
             path: '/cacheClusterEnabled',
             value: 'true'
@@ -159,7 +176,7 @@ describe('Updating stage cache settings', () => {
         });
 
         it('should set the cache cluster size', () => {
-          expect(recordedParams.patchOperations).to.deep.include({
+          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
             op: 'replace',
             path: '/cacheClusterSize',
             value: '0.5'
@@ -168,7 +185,7 @@ describe('Updating stage cache settings', () => {
 
         describe('for the endpoint with caching enabled', () => {
           it('should enable caching', () => {
-            expect(recordedParams.patchOperations).to.deep.include({
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
               op: 'replace',
               path: '/~1cat~1{pawId}/GET/caching/enabled',
               value: 'true'
@@ -176,7 +193,7 @@ describe('Updating stage cache settings', () => {
           });
 
           it('should set the correct cache time to live', () => {
-            expect(recordedParams.patchOperations).to.deep.include({
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
               op: 'replace',
               path: '/~1cat~1{pawId}/GET/caching/ttlInSeconds',
               value: '45'
@@ -186,7 +203,7 @@ describe('Updating stage cache settings', () => {
 
         describe('for each endpoint with caching disabled', () => {
           it('should disable caching', () => {
-            expect(recordedParams.patchOperations).to.deep.include({
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
               op: 'replace',
               path: '/~1personal~1cat/GET/caching/enabled',
               value: 'false'
@@ -194,7 +211,7 @@ describe('Updating stage cache settings', () => {
           });
 
           it('should not set the cache time to live', () => {
-            let ttlOperation = recordedParams.patchOperations
+            let ttlOperation = apiGatewayRequest.properties.patchOperations
               .find(o => o.path == '/~personal~1cat/GET/caching/ttlInSeconds');
             expect(ttlOperation).to.not.exist;
           });
@@ -319,8 +336,6 @@ describe('Updating stage cache settings', () => {
       for (let scenario of scenarios) {
         describe(scenario.description, () => {
           before(async () => {
-            given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
-
             let endpoint = given.a_serverless_function('get-my-cat')
               .withHttpEndpoint('get', '/personal/cat', scenario.endpointCachingSettings);
             serverless = given.a_serverless_instance()
@@ -333,19 +348,18 @@ describe('Updating stage cache settings', () => {
             restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
             await when_updating_stage_cache_settings(settings, serverless);
-          });
 
-          after(() => {
-            teardown.unmock_aws_sdk();
+            requestsToAws = serverless.getRequestsToAws();
+            apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
           });
 
           it('should set whether the endpoint requires authorization for cache control', () => {
-            expect(recordedParams.patchOperations).to.deep.include(scenario.expectedPatchForAuth);
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include(scenario.expectedPatchForAuth);
           });
 
           if (scenario.expectedPatchForUnauthorizedStrategy) {
             it('should set the strategy for unauthorized requests to invalidate cache', () => {
-              expect(recordedParams.patchOperations).to.deep.include(scenario.expectedPatchForUnauthorizedStrategy);
+              expect(apiGatewayRequest.properties.patchOperations).to.deep.include(scenario.expectedPatchForUnauthorizedStrategy);
             });
           }
         });
@@ -355,8 +369,6 @@ describe('Updating stage cache settings', () => {
 
   describe('When an endpoint with http method `any` has caching enabled', () => {
     before(async () => {
-      given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
-
       let endpointWithCaching = given.a_serverless_function('do-anything-to-cat')
         .withHttpEndpoint('any', '/cat', { enabled: true, ttlInSeconds: 45 });
 
@@ -369,14 +381,13 @@ describe('Updating stage cache settings', () => {
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
       await when_updating_stage_cache_settings(settings, serverless);
-    });
 
-    after(() => {
-      teardown.unmock_aws_sdk();
+      requestsToAws = serverless.getRequestsToAws();
+      apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
     });
 
     it('should enable caching for the GET method', () => {
-      expect(recordedParams.patchOperations).to.deep.include({
+      expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
         op: 'replace',
         path: '/~1cat/GET/caching/enabled',
         value: 'true'
@@ -384,7 +395,7 @@ describe('Updating stage cache settings', () => {
     });
 
     it('should set the correct time to live for the GET method cache', () => {
-      expect(recordedParams.patchOperations).to.deep.include({
+      expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
         op: 'replace',
         path: '/~1cat/GET/caching/ttlInSeconds',
         value: '45'
@@ -394,7 +405,7 @@ describe('Updating stage cache settings', () => {
     let otherMethods = ['DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'];
     for (let method of otherMethods) {
       it(`should disable caching for the ${method} method`, () => {
-        expect(recordedParams.patchOperations).to.deep.include({
+        expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
           op: 'replace',
           path: `/~1cat/${method}/caching/enabled`,
           value: 'false'
@@ -405,8 +416,6 @@ describe('Updating stage cache settings', () => {
 
   describe('When an endpoint with http method `any` has caching disabled', () => {
     before(async () => {
-      given.api_gateway_update_stage_is_mocked(r => recordedParams = r);
-
       let endpointWithoutCaching = given.a_serverless_function('do-anything-to-cat')
         .withHttpEndpoint('any', '/cat', { enabled: false });
 
@@ -419,16 +428,15 @@ describe('Updating stage cache settings', () => {
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
       await when_updating_stage_cache_settings(settings, serverless);
-    });
 
-    after(() => {
-      teardown.unmock_aws_sdk();
+      requestsToAws = serverless.getRequestsToAws();
+      apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
     });
 
     let allMethods = ['GET', 'DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT'];
     for (let method of allMethods) {
       it(`should disable caching for the ${method} method`, () => {
-        expect(recordedParams.patchOperations).to.deep.include({
+        expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
           op: 'replace',
           path: `/~1cat/${method}/caching/enabled`,
           value: 'false'
