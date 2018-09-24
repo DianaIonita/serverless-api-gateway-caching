@@ -88,7 +88,7 @@ class Serverless {
               Stacks: [
                 {
                   Outputs: [{
-                    OutputKey: 'RestApiIdForApiGwCaching',
+                    OutputKey: 'RestApiIdForApigCaching',
                     OutputValue: restApiId
                   }]
                 }
