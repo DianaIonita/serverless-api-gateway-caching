@@ -1,17 +1,5 @@
 const isEmpty = require('lodash.isempty');
-
-const getRestApiId = async (settings, serverless) => {
-  const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
-
-  let stack = await serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
-    settings.stage,
-    settings.region
-  );
-
-  return stack.Stacks[0].Outputs
-    .filter(output => output.OutputKey === 'RestApiIdForApiGwCaching')
-    .map(output => output.OutputValue)[0];
-}
+const { retrieveRestApiId } = require('./restApiId');
 
 String.prototype.replaceAll = function (search, replacement) {
   let target = this;
@@ -119,7 +107,7 @@ const updateStageCacheSettings = async (settings, serverless) => {
     return;
   }
 
-  let restApiId = await getRestApiId(settings, serverless);
+  let restApiId = await retrieveRestApiId(serverless, settings);
 
   let patchOps = createPatchForStage(settings);
 
