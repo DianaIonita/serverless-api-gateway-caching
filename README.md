@@ -64,5 +64,6 @@ functions:
               handleUnauthorizedRequests: Ignore
             cacheKeyParameters:
               - name: request.path.pawId
+                required: false # default is true
               - name: request.header.Accept-Language
 ```
