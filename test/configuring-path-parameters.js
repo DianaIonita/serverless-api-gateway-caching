@@ -71,13 +71,13 @@ describe('Configuring path parameter caching', () => {
         method = serverless.getMethodResourceForFunction(functionWithCachingName);
       });
 
-      it('should set that request parameters are part of the cache key', () => {	
-        for (let parameter of cacheKeyParameters) {	
-          expect(method.Properties.RequestParameters)	
-            .to.deep.include({	
-              [`method.${parameter.name}`]: true
-            });	
-        }	
+      it('should set that request parameters are part of the cache key', () => {
+        for (let parameter of cacheKeyParameters) {
+          expect(method.Properties.RequestParameters)
+            .to.deep.include({
+              [`method.${parameter.name}`]: {}
+            });
+        }
       });
 
       it('should set integration request parameters', () => {
@@ -101,7 +101,7 @@ describe('Configuring path parameter caching', () => {
       });
     });
 
-    describe('on the method resource correspondin with the endpoint without cache key parameters', () => {
+    describe('on the method resource corresponding with the endpoint without cache key parameters', () => {
       before(() => {
         method = serverless.getMethodResourceForFunction(functionWithoutCachingName);
       });
