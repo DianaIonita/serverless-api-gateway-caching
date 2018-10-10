@@ -48,7 +48,8 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     }
 
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
-      method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = {};
+      let existingValue = method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
+      method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = existingValue || {};
       method.resource.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
       method.resource.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
     }
