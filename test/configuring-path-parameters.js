@@ -169,6 +169,104 @@ describe('Configuring path parameter caching', () => {
       });
     }
   });
+
+  describe('when there are two endpoints with a cache key parameter', () => {
+    describe(`and the second endpoint's name is a substring of the first endpoint's name`, () => {
+      let method, firstEndpointName, firstEndpointCacheKeyParameters, secondEndpointName, secondEndpointCacheKeyParameters;
+      before(() => {
+        firstEndpointName = 'catpaw';
+        secondEndpointName = 'paw';
+        firstEndpointCacheKeyParameters = [{ name: 'request.path.catPawId' }];
+        secondEndpointCacheKeyParameters = [{ name: 'request.path.pawId' }];
+
+        let firstFunctionWithCaching = given.a_serverless_function(firstEndpointName)
+          .withHttpEndpoint('get', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: firstEndpointCacheKeyParameters });
+
+        let secondFunctionWithCaching = given.a_serverless_function(secondEndpointName)
+          .withHttpEndpoint('get', '/paw/{catPawId}', { enabled: true, cacheKeyParameters: secondEndpointCacheKeyParameters });
+
+        serverless = given.a_serverless_instance(serviceName)
+          .withApiGatewayCachingConfig(true, '0.5', 45)
+          .forStage(stage)
+          .withFunction(firstFunctionWithCaching)
+          .withFunction(secondFunctionWithCaching);
+
+        cacheSettings = new ApiGatewayCachingSettings(serverless);
+
+        when_configuring_path_parameters(cacheSettings, serverless);
+      });
+
+      describe('on the method corresponding with the first endpoint with cache key parameters', () => {
+        before(() => {
+          method = serverless.getMethodResourceForFunction(firstEndpointName);
+        });
+
+        it('should configure them as request parameters', () => {
+          for (let parameter of firstEndpointCacheKeyParameters) {
+            expect(method.Properties.RequestParameters)
+              .to.deep.include({
+                [`method.${parameter.name}`]: {}
+              });
+          }
+        });
+
+        it('should set integration request parameters', () => {
+          for (let parameter of firstEndpointCacheKeyParameters) {
+            expect(method.Properties.Integration.RequestParameters)
+              .to.deep.include({
+                [`integration.${parameter.name}`]: `method.${parameter.name}`
+              });
+          }
+        });
+
+        it('should set integration cache key parameters', () => {
+          for (let parameter of firstEndpointCacheKeyParameters) {
+            expect(method.Properties.Integration.CacheKeyParameters)
+              .to.include(`method.${parameter.name}`);
+          }
+        });
+
+        it('should set a cache namespace', () => {
+          expect(method.Properties.Integration.CacheNamespace).to.exist;
+        });
+      });
+
+      describe('on the method corresponding with the second endpoint with cache key parameters', () => {
+        before(() => {
+          method = serverless.getMethodResourceForFunction(secondEndpointName);
+        });
+
+        it('should configure them as request parameters', () => {
+          for (let parameter of secondEndpointCacheKeyParameters) {
+            expect(method.Properties.RequestParameters)
+              .to.deep.include({
+                [`method.${parameter.name}`]: {}
+              });
+          }
+        });
+
+        it('should set integration request parameters', () => {
+          for (let parameter of secondEndpointCacheKeyParameters) {
+            expect(method.Properties.Integration.RequestParameters)
+              .to.deep.include({
+                [`integration.${parameter.name}`]: `method.${parameter.name}`
+              });
+          }
+        });
+
+        it('should set integration cache key parameters', () => {
+          for (let parameter of secondEndpointCacheKeyParameters) {
+            expect(method.Properties.Integration.CacheKeyParameters)
+              .to.include(`method.${parameter.name}`);
+          }
+        });
+
+        it('should set a cache namespace', () => {
+          expect(method.Properties.Integration.CacheNamespace).to.exist;
+        });
+      });
+    });
+  });
 });
 
 const when_configuring_path_parameters = (settings, serverless) => {
