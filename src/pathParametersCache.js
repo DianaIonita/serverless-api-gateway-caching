@@ -30,7 +30,7 @@ const getApiGatewayMethodFor = (endpointSettings, stage, serverless) => {
   const methods = getResourcesByType('AWS::ApiGateway::Method', serverless);
   for (let method of methods) {
     let stringified = JSON.stringify(method);
-    if (stringified.lastIndexOf(lambdaFunctionResource.name) != -1) {
+    if (stringified.lastIndexOf(`"${lambdaFunctionResource.name}"`) != -1) {
       return method;
     }
   }
