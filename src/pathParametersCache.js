@@ -20,9 +20,11 @@ const getResourceForLambdaFunctionNamed = (fullFunctionName, serverless) => {
   return lambdaResource[0];
 }
 
-const getApiGatewayMethodFor = (functionName, stage, serverless) => {
-  const fullFunctionName = `${serverless.service.service}-${stage}-${functionName}`;
-  const lambdaFunctionResource = getResourceForLambdaFunctionNamed(fullFunctionName, serverless);
+const getApiGatewayMethodFor = (endpointSettings, stage, serverless) => {
+  const fullFunctionName = `${serverless.service.service}-${stage}-${endpointSettings.functionName}`;
+  const name = endpointSettings.customFunctionName ? endpointSettings.customFunctionName : fullFunctionName;
+
+  const lambdaFunctionResource = getResourceForLambdaFunctionNamed(name, serverless);
 
   // returns the first method found which depends on this lambda
   const methods = getResourcesByType('AWS::ApiGateway::Method', serverless);
@@ -38,8 +40,8 @@ const addPathParametersCacheConfig = (settings, serverless) => {
   for (let endpointSettings of settings.endpointSettings) {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
-    }
-    const method = getApiGatewayMethodFor(endpointSettings.functionName, settings.stage, serverless);
+    }  
+    const method = getApiGatewayMethodFor(endpointSettings, settings.stage, serverless);
     if (!method.resource.Properties.Integration.CacheKeyParameters) {
       method.resource.Properties.Integration.CacheKeyParameters = [];
     }

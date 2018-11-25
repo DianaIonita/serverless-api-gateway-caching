@@ -223,7 +223,8 @@ describe('Creating settings', () => {
 
           let getCatByPawIdCaching = { enabled: true, ttlInSeconds: 30 };
           let getCatByPawId = given.a_serverless_function(getCatByPawIdFunctionName)
-            .withHttpEndpoint('get', '/cat/{pawId}', getCatByPawIdCaching);
+            .withHttpEndpoint('get', '/cat/{pawId}', getCatByPawIdCaching)
+            .withHttpEndpoint('delete', '/cat/{pawId}', getCatByPawIdCaching);
 
           let getMyCatCaching = { enabled: false };
           let getMyCat = given.a_serverless_function(getMyCatFunctionName)
@@ -240,7 +241,7 @@ describe('Creating settings', () => {
         });
 
         it('should create cache settings for all http endpoints', () => {
-          expect(cacheSettings.endpointSettings).to.have.lengthOf(3);
+          expect(cacheSettings.endpointSettings).to.have.lengthOf(4);
         });
 
         describe('caching for http endpoint without cache settings defined', () => {
