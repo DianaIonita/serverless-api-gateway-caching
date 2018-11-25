@@ -112,14 +112,14 @@ const addFunctionToCompiledCloudFormationTemplate = (functionName, serverless) =
   let { Resources } = serverless.service.provider.compiledCloudFormationTemplate;
   let functionTemplate = clone(require('./templates/aws-lambda-function'));
   functionTemplate.Properties.FunctionName = fullFunctionName;
-  let functionResourceName = chance.word({ length: 10 });
+  let functionResourceName = `${functionName}LambdaFunction`;
   Resources[functionResourceName] = functionTemplate;
 
   let methodTemplate = clone(require('./templates/aws-api-gateway-method'));
   let stringifiedMethodTemplate = JSON.stringify(methodTemplate);
   stringifiedMethodTemplate = stringifiedMethodTemplate.replace('#{LAMBDA_RESOURCE_DEPENDENCY}', functionResourceName);
   methodTemplate = JSON.parse(stringifiedMethodTemplate);
-  methodResourceName = chance.word({ length: 12 });
+  methodResourceName = `ApiGatewayMethod${functionName}VarGet`;
   Resources[methodResourceName] = methodTemplate
   return { functionResourceName, methodResourceName }
 }
