@@ -16,7 +16,7 @@ const a_rest_api_id = () => {
 }
 
 const a_rest_api_id_for_deployment = async (serverless, settings) => {
-  let restApiId = a_rest_api_id;
+  let restApiId = a_rest_api_id();
   serverless.setRestApiId(restApiId, settings);
 
   return restApiId;
