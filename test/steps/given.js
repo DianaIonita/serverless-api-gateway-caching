@@ -11,8 +11,12 @@ const a_serverless_function = name => {
   return new ServerlessFunction(name);
 }
 
+const a_rest_api_id = () => {
+  return chance.guid();
+}
+
 const a_rest_api_id_for_deployment = async (serverless, settings) => {
-  let restApiId = chance.guid();
+  let restApiId = a_rest_api_id;
   serverless.setRestApiId(restApiId, settings);
 
   return restApiId;
@@ -21,5 +25,6 @@ const a_rest_api_id_for_deployment = async (serverless, settings) => {
 module.exports = {
   a_serverless_instance,
   a_serverless_function,
+  a_rest_api_id,
   a_rest_api_id_for_deployment
 }
