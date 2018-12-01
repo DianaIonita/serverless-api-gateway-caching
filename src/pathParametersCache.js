@@ -1,39 +1,29 @@
-const isEmpty = require('lodash.isempty');
+const split = require('lodash.split');
 
-const getResourcesByType = (type, serverless) => {
-  let result = []
+const getResourcesByName = (name, serverless) => {
   let resourceKeys = Object.keys(serverless.service.provider.compiledCloudFormationTemplate.Resources);
   for (let resourceName of resourceKeys) {
-    let resource = serverless.service.provider.compiledCloudFormationTemplate.Resources[resourceName];
-    if (resource.Type == type) {
-      result.push({ name: resourceName, resource });
+    if (resourceName == name) {
+      return serverless.service.provider.compiledCloudFormationTemplate.Resources[resourceName];
     }
   }
-  return result;
 }
 
-const getResourceForLambdaFunctionNamed = (fullFunctionName, serverless) => {
-  let lambdaResource = getResourcesByType('AWS::Lambda::Function', serverless).filter(r => r.resource.Properties.FunctionName == fullFunctionName);
-  if (isEmpty(lambdaResource)) {
-    throw new Error('Something has gone wrong');
-  }
-  return lambdaResource[0];
-}
+const getApiGatewayMethodNameFor = (path, httpMethod) => {
+  const pathElements = split(path,'/');
+  pathElements.push(httpMethod.toLowerCase());
+  let gatewayResourceName = pathElements
+              .map (element =>  {
+                  element = element.toLowerCase();
+                  if(element.startsWith('{')) {
+                      element = element.substring(element.indexOf('{') + 1,element.indexOf('}')) + "Var";
+                  }
+                  //capitalize first letter
+                  return element.charAt(0).toUpperCase() + element.slice(1);
+              }).reduce((a, b) => a + b);
 
-const getApiGatewayMethodFor = (endpointSettings, stage, serverless) => {
-  const fullFunctionName = `${serverless.service.service}-${stage}-${endpointSettings.functionName}`;
-  const name = endpointSettings.customFunctionName ? endpointSettings.customFunctionName : fullFunctionName;
-
-  const lambdaFunctionResource = getResourceForLambdaFunctionNamed(name, serverless);
-
-  // returns the first method found which depends on this lambda
-  const methods = getResourcesByType('AWS::ApiGateway::Method', serverless);
-  for (let method of methods) {
-    let stringified = JSON.stringify(method);
-    if (stringified.lastIndexOf(`"${lambdaFunctionResource.name}"`) != -1) {
-      return method;
-    }
-  }
+  gatewayResourceName  = "ApiGatewayMethod" + gatewayResourceName;    
+  return gatewayResourceName;            
 }
 
 const addPathParametersCacheConfig = (settings, serverless) => {
@@ -41,22 +31,35 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
     }  
-    const method = getApiGatewayMethodFor(endpointSettings, settings.stage, serverless);
-    if (!method.resource.Properties.Integration.CacheKeyParameters) {
-      method.resource.Properties.Integration.CacheKeyParameters = [];
+    const resourceName = getApiGatewayMethodNameFor(endpointSettings.path, endpointSettings.method);
+    const method = getResourcesByName(resourceName,serverless);
+    if (!method)  {
+      serverless.cli.log(`[serverless-api-gateway-caching] The method ${resourceName} couldn't be found in the
+                           compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
+      const index = settings.endpointSettings.indexOf(endpointSettings);
+      if(index != -1) {
+        settings.endpointSettings.splice(index,1);
+      }
+      return;
     }
-    if (!method.resource.Properties.Integration.RequestParameters) {
-      method.resource.Properties.Integration.RequestParameters = {}
+    if (!method.Properties.Integration.CacheKeyParameters) {
+      method.Properties.Integration.CacheKeyParameters = [];
+    }
+    if (!method.Properties.Integration.RequestParameters) {
+      method.Properties.Integration.RequestParameters = {}
     }
 
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
-      let existingValue = method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
-      method.resource.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
-      method.resource.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
-      method.resource.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
+      let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
+      method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
+      method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
+      method.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
     }
-    method.resource.Properties.Integration.CacheNamespace = `${method.name}CacheNS`;
+    method.Properties.Integration.CacheNamespace = `${resourceName}CacheNS`;
   }
 }
 
-module.exports = addPathParametersCacheConfig;
+module.exports =   {
+  addPathParametersCacheConfig: addPathParametersCacheConfig,
+  getApiGatewayMethodNameFor: getApiGatewayMethodNameFor
+}

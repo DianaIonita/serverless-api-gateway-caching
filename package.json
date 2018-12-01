@@ -19,7 +19,8 @@
   "license": "ISC",
   "dependencies": {
     "lodash.get": "^4.4.2",
-    "lodash.isempty": "^4.4.0"
+    "lodash.isempty": "^4.4.0",
+    "lodash.split": "^4.4.0"
   },
   "bugs": {
     "url": "https://github.com/DianaIonita/serverless-api-gateway-caching/issues"

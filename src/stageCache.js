@@ -64,15 +64,19 @@ const patchForMethod = (path, method, endpointSettings) => {
   return patch;
 }
 
+const httpEventOf = (lambda, endpointSettings) => {
+  return lambda.events.filter(e => e.http != undefined)
+                      .filter(e => e.http.path === endpointSettings.path || "/" + e.http.path === endpointSettings.path)
+                      .filter(e => e.http.method === endpointSettings.method);
+}
+
 const createPatchForEndpoint = (endpointSettings, serverless) => {
   let lambda = serverless.service.getFunction(endpointSettings.functionName);
   if (isEmpty(lambda.events)) {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined events.`);
     return;
   }
-  let httpEvents = lambda.events.filter(e => e.http != undefined)
-                                .filter(e => e.http.path === endpointSettings.path || "/" + e.http.path === endpointSettings.path)
-                                .filter(e => e.http.method === endpointSettings.method);
+  const httpEvents = httpEventOf(lambda,endpointSettings);
   if (isEmpty(httpEvents)) {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined any HTTP events.`);
     return;
@@ -130,7 +134,6 @@ const updateStageCacheSettings = async (settings, serverless) => {
   }
 
   serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
-  serverless.cli.log(`[serverless-api-gateway-caching] Updating the stage with: ${JSON.stringify(params)}`);
   await serverless.providers.aws.request('APIGateway', 'updateStage', params, settings.stage, settings.region);
   serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
 }
