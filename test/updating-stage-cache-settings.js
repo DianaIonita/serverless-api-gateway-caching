@@ -137,9 +137,11 @@ describe('Updating stage cache settings', () => {
     describe('and there are some endpoints with caching enabled', () => {
       before(async () => {
         let endpointWithoutCaching = given.a_serverless_function('get-my-cat')
-          .withHttpEndpoint('get', '/personal/cat', { enabled: false });
+          .withHttpEndpoint('get', '/personal/cat', { enabled: false })
+          .withHttpEndpoint('get', '/personal/cat/{catId}', { enabled: false });
         let endpointWithCaching = given.a_serverless_function('get-cat-by-paw-id')
-          .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
+          .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 })
+          .withHttpEndpoint('delete', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
         serverless = given.a_serverless_instance()
           .withApiGatewayCachingConfig(true, '0.5', 60)
           .withFunction(endpointWithCaching)
@@ -190,12 +192,22 @@ describe('Updating stage cache settings', () => {
               path: '/~1cat~1{pawId}/GET/caching/enabled',
               value: 'true'
             });
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+              op: 'replace',
+              path: '/~1cat~1{pawId}/DELETE/caching/enabled',
+              value: 'true'
+            });
           });
 
           it('should set the correct cache time to live', () => {
             expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
               op: 'replace',
               path: '/~1cat~1{pawId}/GET/caching/ttlInSeconds',
+              value: '45'
+            });
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+              op: 'replace',
+              path: '/~1cat~1{pawId}/DELETE/caching/ttlInSeconds',
               value: '45'
             });
           });
@@ -208,11 +220,17 @@ describe('Updating stage cache settings', () => {
               path: '/~1personal~1cat/GET/caching/enabled',
               value: 'false'
             });
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+              op: 'replace',
+              path: '/~1personal~1cat~1{catId}/GET/caching/enabled',
+              value: 'false'
+            });
           });
 
           it('should not set the cache time to live', () => {
             let ttlOperation = apiGatewayRequest.properties.patchOperations
-              .find(o => o.path == '/~personal~1cat/GET/caching/ttlInSeconds');
+              .find(o => o.path == '/~personal~1cat/GET/caching/ttlInSeconds' ||
+                    o.path == '/~personal~1cat~1{catId}/GET/caching/ttlInSeconds' );
             expect(ttlOperation).to.not.exist;
           });
         });
