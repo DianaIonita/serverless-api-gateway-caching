@@ -18,11 +18,8 @@ const mapUnauthorizedRequestStrategy = strategy => {
   }
 }
 
-const isApiGatewayEndpoint = functionSettings => {
-  if (isEmpty(functionSettings.events)) {
-    return false;
-  }
-  return functionSettings.events.filter(e => e.http != null).length > 0;
+const isApiGatewayEndpoint = event => {
+  return event.http ?  true: false;
 }
 
 class PerKeyInvalidationSettings {
@@ -43,15 +40,18 @@ class PerKeyInvalidationSettings {
 }
 
 class ApiGatewayEndpointCachingSettings {
-  constructor(functionName, functionSettings, globalSettings) {
+  constructor(customFunctionName, functionName, event, globalSettings) {
+    this.customFunctionName = customFunctionName;
     this.functionName = functionName;
-
-    // TODO multiple http endpoints
-    let cachingConfig = functionSettings.events.filter(e => e.http != null)[0].http.caching;
-    if (!cachingConfig) {
+    
+    this.path = event.http.path;
+    this.method = event.http.method;
+    
+    if (!event.http.caching) {
       this.cachingEnabled = false;
       return;
     }
+    let cachingConfig = event.http.caching;
     this.cachingEnabled = globalSettings.cachingEnabled ? cachingConfig.enabled : false;
     this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
     this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
@@ -88,8 +88,10 @@ class ApiGatewayCachingSettings {
 
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
-      if (isApiGatewayEndpoint(functionSettings)) {
-        this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionName, functionSettings, this))
+      for(let event in functionSettings.events) {
+        if (isApiGatewayEndpoint(functionSettings.events[event])) {
+          this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionSettings.name, functionName, functionSettings.events[event], this))
+        }
       }
     }
   }
