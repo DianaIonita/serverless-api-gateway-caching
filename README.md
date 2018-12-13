@@ -18,9 +18,6 @@ You can configure how to handle unauthorized requests to invalidate a cache key 
 * `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response.
 * `Fail` - fails the request to invalidate the cache key with a 403 response status code.
 
-## Currently not supported:
-* lambda functions with many HTTP events.
-
 ## Example
 
 ```yml
