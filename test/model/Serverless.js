@@ -123,7 +123,7 @@ class Serverless {
 const clone = object => JSON.parse(JSON.stringify(object));
 
 const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverless) => {
-  const functionName  =  Object.keys(serverlessFunction)[0];
+  const functionName = Object.keys(serverlessFunction)[0];
   const fullFunctionName = `${serverless.service.service}-${serverless.service.provider.stage}-${functionName}`;
   let { Resources } = serverless.service.provider.compiledCloudFormationTemplate;
   let functionTemplate = clone(require('./templates/aws-lambda-function'));
@@ -135,19 +135,19 @@ const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverl
   let stringifiedMethodTemplate = JSON.stringify(methodTemplate);
   stringifiedMethodTemplate = stringifiedMethodTemplate.replace('#{LAMBDA_RESOURCE_DEPENDENCY}', functionResourceName);
   methodTemplate = JSON.parse(stringifiedMethodTemplate);
-  
+
   const events = serverlessFunction[functionName].events;
-  if(!Array.isArray(events) || !events.length) {
+  if (!Array.isArray(events) || !events.length) {
     methodResourceName = `ApiGatewayMethod${functionName}VarGet`;
   } else {
-    for(event of events) {
+    for (event of events) {
       const path = event.http.path;
       const method = event.http.method;
-      methodResourceName = pathParams.getApiGatewayMethodNameFor(path,method);
+      methodResourceName = pathParams.getApiGatewayMethodNameFor(path, method);
       Resources[methodResourceName] = methodTemplate;
     }
   }
-  
+
   Resources[methodResourceName] = methodTemplate
   return { functionResourceName, methodResourceName }
 }

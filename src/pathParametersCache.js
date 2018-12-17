@@ -10,35 +10,36 @@ const getResourcesByName = (name, serverless) => {
 }
 
 const getApiGatewayMethodNameFor = (path, httpMethod) => {
-  const pathElements = split(path,'/');
+  const pathElements = split(path, '/');
   pathElements.push(httpMethod.toLowerCase());
   let gatewayResourceName = pathElements
-              .map (element =>  {
-                  element = element.toLowerCase();
-                  if(element.startsWith('{')) {
-                      element = element.substring(element.indexOf('{') + 1,element.indexOf('}')) + "Var";
-                  }
-                  //capitalize first letter
-                  return element.charAt(0).toUpperCase() + element.slice(1);
-              }).reduce((a, b) => a + b);
+    .map(element => {
+      element = element.toLowerCase();
+      element = element.replace('+', '');
+      if (element.startsWith('{')) {
+        element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
+      }
+      //capitalize first letter
+      return element.charAt(0).toUpperCase() + element.slice(1);
+    }).reduce((a, b) => a + b);
 
-  gatewayResourceName  = "ApiGatewayMethod" + gatewayResourceName;    
-  return gatewayResourceName;            
+  gatewayResourceName = "ApiGatewayMethod" + gatewayResourceName;
+  return gatewayResourceName;
 }
 
 const addPathParametersCacheConfig = (settings, serverless) => {
   for (let endpointSettings of settings.endpointSettings) {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
-    }  
+    }
     const resourceName = getApiGatewayMethodNameFor(endpointSettings.path, endpointSettings.method);
-    const method = getResourcesByName(resourceName,serverless);
-    if (!method)  {
+    const method = getResourcesByName(resourceName, serverless);
+    if (!method) {
       serverless.cli.log(`[serverless-api-gateway-caching] The method ${resourceName} couldn't be found in the
                            compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
       const index = settings.endpointSettings.indexOf(endpointSettings);
-      if(index != -1) {
-        settings.endpointSettings.splice(index,1);
+      if (index != -1) {
+        settings.endpointSettings.splice(index, 1);
       }
       return;
     }
@@ -59,7 +60,7 @@ const addPathParametersCacheConfig = (settings, serverless) => {
   }
 }
 
-module.exports =   {
+module.exports = {
   addPathParametersCacheConfig: addPathParametersCacheConfig,
   getApiGatewayMethodNameFor: getApiGatewayMethodNameFor
 }
