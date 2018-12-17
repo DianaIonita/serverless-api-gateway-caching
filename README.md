@@ -32,6 +32,7 @@ custom:
     enabled: true
 
 functions:
+  # Responses are cached
   list-all-cats:
     handler: rest_api/cats/get/handler.handle
     events:
@@ -39,7 +40,28 @@ functions:
           path: /cats
           method: get
           caching:
-            enabled: true # default is false
+            enabled: true
+
+  # Responses are *not* cached
+  update-cat:
+    handler: rest_api/cat/post/handler.handle
+    events:
+      - http:
+          path: /cat
+          method: post
+
+  # Responses are cached based on the 'pawId' path parameter and the 'Accept-Language' header
+  get-cat-by-paw-id:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats/{pawId}
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.path.pawId
+              - name: request.header.Accept-Language
 ```
 
 ### Configuring the cache cluster size and cache time to live
