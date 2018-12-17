@@ -5,7 +5,7 @@ const pathParams = require(`${APP_ROOT}/src/pathParametersCache`);
 const expect = require('chai').expect;
 
 describe('Configuring path parameter caching', () => {
-  let serverless, cacheSettings;
+  let serverless;
   let serviceName = 'cat-api', stage = 'dev';
 
   describe('when there are no endpoints', () => {
@@ -13,12 +13,11 @@ describe('Configuring path parameter caching', () => {
       serverless = given.a_serverless_instance(serviceName)
         .withApiGatewayCachingConfig(true, '0.5', 45)
         .forStage(stage);
-      cacheSettings = new ApiGatewayCachingSettings(serverless);
     });
 
     it('should do nothing to the serverless instance', () => {
       let stringified = JSON.stringify(serverless);
-      when_configuring_path_parameters(cacheSettings, serverless);
+      when_configuring_path_parameters(serverless);
       let stringifiedAfter = JSON.stringify(serverless);
       expect(stringified).to.equal(stringifiedAfter);
     });
@@ -32,12 +31,11 @@ describe('Configuring path parameter caching', () => {
         .withApiGatewayCachingConfig(true, '0.5', 45)
         .forStage(stage)
         .withFunction(endpoint);
-      cacheSettings = new ApiGatewayCachingSettings(serverless);
     });
 
     it('should do nothing to the serverless instance', () => {
       let stringified = JSON.stringify(serverless);
-      when_configuring_path_parameters(cacheSettings, serverless);
+      when_configuring_path_parameters(serverless);
       let stringifiedAfter = JSON.stringify(serverless);
       expect(stringified).to.equal(stringifiedAfter);
     });
@@ -61,9 +59,8 @@ describe('Configuring path parameter caching', () => {
         .forStage(stage)
         .withFunction(functionWithCaching)
         .withFunction(functionWithoutCaching);
-      cacheSettings = new ApiGatewayCachingSettings(serverless);
 
-      when_configuring_path_parameters(cacheSettings, serverless);
+      when_configuring_path_parameters(serverless);
     });
 
     describe('on the method corresponding with the endpoint with cache key parameters', () => {
@@ -156,8 +153,7 @@ describe('Configuring path parameter caching', () => {
           method = serverless.getMethodResourceForFunction(functionWithCachingName);
           method.Properties.RequestParameters[`method.${cacheKeyParameters[0].name}`] = isRequired;
 
-          cacheSettings = new ApiGatewayCachingSettings(serverless);
-          when_configuring_path_parameters(cacheSettings, serverless)
+          when_configuring_path_parameters(serverless)
         });
 
         it('should keep configuration', () => {
@@ -191,9 +187,7 @@ describe('Configuring path parameter caching', () => {
           .withFunction(firstFunctionWithCaching)
           .withFunction(secondFunctionWithCaching);
 
-        cacheSettings = new ApiGatewayCachingSettings(serverless);
-
-        when_configuring_path_parameters(cacheSettings, serverless);
+        when_configuring_path_parameters(serverless);
       });
 
       describe('on the method corresponding with the first endpoint with cache key parameters', () => {
@@ -267,26 +261,25 @@ describe('Configuring path parameter caching', () => {
       });
     });
   });
+
   describe('when there are two endpoints with a cache key parameter on the same function', () => {
-      let method, functionName, firstEndpointCacheKeyParameters, secondEndpointCacheKeyParameters;
-      before(() => {
-        functionName = 'catpaw';
-        
-        firstEndpointCacheKeyParameters = [{ name: 'request.path.pawId' }];
-        secondEndpointCacheKeyParameters = [{ name: 'request.path.pawId' }];
+    let method, functionName, firstEndpointCacheKeyParameters, secondEndpointCacheKeyParameters;
+    before(() => {
+      functionName = 'catpaw';
 
-        let firstFunctionWithCaching = given.a_serverless_function(functionName)
-          .withHttpEndpoint('get', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: firstEndpointCacheKeyParameters })
-          .withHttpEndpoint('delete', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: secondEndpointCacheKeyParameters });
-        serverless = given.a_serverless_instance(serviceName)
-          .withApiGatewayCachingConfig(true, '0.5', 45)
-          .forStage(stage)
-          .withFunction(firstFunctionWithCaching)
-        
-        cacheSettings = new ApiGatewayCachingSettings(serverless);
+      firstEndpointCacheKeyParameters = [{ name: 'request.path.pawId' }];
+      secondEndpointCacheKeyParameters = [{ name: 'request.path.pawId' }];
 
-        when_configuring_path_parameters(cacheSettings, serverless);
-  });
+      let firstFunctionWithCaching = given.a_serverless_function(functionName)
+        .withHttpEndpoint('get', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: firstEndpointCacheKeyParameters })
+        .withHttpEndpoint('delete', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: secondEndpointCacheKeyParameters });
+      serverless = given.a_serverless_instance(serviceName)
+        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .forStage(stage)
+        .withFunction(firstFunctionWithCaching)
+
+      when_configuring_path_parameters(serverless);
+    });
 
     describe('on the method corresponding with the first endpoint with cache key parameters', () => {
       before(() => {
@@ -324,7 +317,7 @@ describe('Configuring path parameter caching', () => {
     });
 
     describe('on the method corresponding with the second endpoint with cache key parameters', () => {
-       before(() => {
+      before(() => {
         method = serverless.getMethodResourceForMethodName("ApiGatewayMethodCatPawPawidVarDelete");
       });
 
@@ -349,7 +342,60 @@ describe('Configuring path parameter caching', () => {
       it('should set integration cache key parameters', () => {
         for (let parameter of secondEndpointCacheKeyParameters) {
           expect(method.Properties.Integration.CacheKeyParameters)
-             .to.include(`method.${parameter.name}`);
+            .to.include(`method.${parameter.name}`);
+        }
+      });
+
+      it('should set a cache namespace', () => {
+        expect(method.Properties.Integration.CacheNamespace).to.exist;
+      });
+    });
+  });
+
+  describe('when an http event path contains the \'+\' special character', () => {
+    let cacheKeyParameters, functionWithCachingName;
+    before(() => {
+      functionWithCachingName = 'get-cat-by-paw-id';
+      cacheKeyParameters = [{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }];
+
+      let functionWithCaching = given.a_serverless_function(functionWithCachingName)
+        .withHttpEndpoint('get', '/cat/{pawId+}', { enabled: true, cacheKeyParameters });
+
+      serverless = given.a_serverless_instance(serviceName)
+        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .forStage(stage)
+        .withFunction(functionWithCaching);
+
+      when_configuring_path_parameters(serverless)
+    });
+
+    describe('on the corresponding method', () => {
+      before(() => {
+        method = serverless.getMethodResourceForFunction(functionWithCachingName);
+      });
+
+      it('should configure cache key parameters as request parameters', () => {
+        for (let parameter of cacheKeyParameters) {
+          expect(method.Properties.RequestParameters)
+            .to.deep.include({
+              [`method.${parameter.name}`]: {}
+            });
+        }
+      });
+
+      it('should set integration request parameters', () => {
+        for (let parameter of cacheKeyParameters) {
+          expect(method.Properties.Integration.RequestParameters)
+            .to.deep.include({
+              [`integration.${parameter.name}`]: `method.${parameter.name}`
+            });
+        }
+      });
+
+      it('should set integration cache key parameters', () => {
+        for (let parameter of cacheKeyParameters) {
+          expect(method.Properties.Integration.CacheKeyParameters)
+            .to.include(`method.${parameter.name}`);
         }
       });
 
@@ -360,6 +406,7 @@ describe('Configuring path parameter caching', () => {
   });
 });
 
-const when_configuring_path_parameters = (settings, serverless) => {
-  return pathParams.addPathParametersCacheConfig(settings, serverless);
+const when_configuring_path_parameters = (serverless) => {
+  let cacheSettings = new ApiGatewayCachingSettings(serverless);
+  return pathParams.addPathParametersCacheConfig(cacheSettings, serverless);
 }
