@@ -67,7 +67,7 @@ const patchForMethod = (path, method, endpointSettings) => {
 const httpEventOf = (lambda, endpointSettings) => {
   return lambda.events.filter(e => e.http != undefined)
                       .filter(e => e.http.path === endpointSettings.path || "/" + e.http.path === endpointSettings.path)
-                      .filter(e => e.http.method === endpointSettings.method);
+                      .filter(e => e.http.method.toUpperCase() === endpointSettings.method.toUpperCase());
 }
 
 const createPatchForEndpoint = (endpointSettings, serverless) => {

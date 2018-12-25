@@ -15,7 +15,8 @@ const getApiGatewayMethodNameFor = (path, httpMethod) => {
   let gatewayResourceName = pathElements
     .map(element => {
       element = element.toLowerCase();
-      element = element.replace('+', '');
+      element = element.split("+").join('');
+      element = element.split(".").join('');
       if (element.startsWith('{')) {
         element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
       }
