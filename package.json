@@ -1,6 +1,6 @@
 {
   "name": "serverless-api-gateway-caching",
-  "version": "1.2.1",
+  "version": "1.2.2-rc1",
   "description": "A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.",
   "main": "src/apiGatewayCachingPlugin.js",
   "scripts": {

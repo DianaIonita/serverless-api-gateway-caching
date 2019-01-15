@@ -15,7 +15,8 @@ const getApiGatewayMethodNameFor = (path, httpMethod) => {
   let gatewayResourceName = pathElements
     .map(element => {
       element = element.toLowerCase();
-      element = element.replace('+', '');
+      element = element.replaceAll('+', '');
+      element = element.replaceAll('_', '');
       if (element.startsWith('{')) {
         element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
       }
@@ -37,11 +38,7 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     if (!method) {
       serverless.cli.log(`[serverless-api-gateway-caching] The method ${resourceName} couldn't be found in the
                            compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
-      const index = settings.endpointSettings.indexOf(endpointSettings);
-      if (index != -1) {
-        settings.endpointSettings.splice(index, 1);
-      }
-      return;
+      continue;
     }
     if (!method.Properties.Integration.CacheKeyParameters) {
       method.Properties.Integration.CacheKeyParameters = [];
