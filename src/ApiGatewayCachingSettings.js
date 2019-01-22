@@ -45,7 +45,7 @@ class ApiGatewayEndpointCachingSettings {
     this.functionName = functionName;
     
     this.path = event.http.path;
-    this.method = event.http.method;
+    this.method = event.http.method.toLowerCase();
     
     if (!event.http.caching) {
       this.cachingEnabled = false;
