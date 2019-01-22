@@ -17,6 +17,7 @@ const getApiGatewayMethodNameFor = (path, httpMethod) => {
       element = element.toLowerCase();
       element = element.replaceAll('+', '');
       element = element.replaceAll('_', '');
+      element = element.replaceAll('.', '');
       if (element.startsWith('{')) {
         element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
       }
