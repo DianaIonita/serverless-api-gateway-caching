@@ -410,58 +410,74 @@ describe('Configuring path parameter caching', () => {
     });
   });
 
-  describe('when an http event path contains the \'+\' special character', () => {
-    let cacheKeyParameters, functionWithCachingName;
-    before(() => {
-      functionWithCachingName = 'get-cat-by-paw-id';
-      cacheKeyParameters = [{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }];
-
-      let functionWithCaching = given.a_serverless_function(functionWithCachingName)
-        .withHttpEndpoint('get', '/cat/{pawId+}', { enabled: true, cacheKeyParameters });
-
-      serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
-        .forStage(stage)
-        .withFunction(functionWithCaching);
-
-      when_configuring_path_parameters(serverless)
-    });
-
-    describe('on the corresponding method', () => {
+  let specialCharacterScenarios = [
+    {
+      description: 'contains the \'+\' special character',
+      httpEndpointPath: '/cat/{pawId+}'
+    },
+    {
+      description: 'contains the \'.\' special character',
+      httpEndpointPath: 'cat.plaything.js'
+    },
+    {
+      description: 'contains the \'_\' special character',
+      httpEndpointPath: '/cat/{paw_id}'
+    }
+  ];
+  for (let { description, httpEndpointPath } of specialCharacterScenarios) {
+    describe(`when an http event path ${description}`, () => {
+      let cacheKeyParameters, functionWithCachingName;
       before(() => {
-        method = serverless.getMethodResourceForFunction(functionWithCachingName);
+        functionWithCachingName = 'get-cat-by-paw-id';
+        cacheKeyParameters = [{ name: 'request.path.pawId' }, { name: 'request.header.Accept-Language' }];
+
+        let functionWithCaching = given.a_serverless_function(functionWithCachingName)
+          .withHttpEndpoint('get', httpEndpointPath, { enabled: true, cacheKeyParameters });
+
+        serverless = given.a_serverless_instance(serviceName)
+          .withApiGatewayCachingConfig(true, '0.5', 45)
+          .forStage(stage)
+          .withFunction(functionWithCaching);
+
+        when_configuring_path_parameters(serverless)
       });
 
-      it('should configure cache key parameters as request parameters', () => {
-        for (let parameter of cacheKeyParameters) {
-          expect(method.Properties.RequestParameters)
-            .to.deep.include({
-              [`method.${parameter.name}`]: {}
-            });
-        }
-      });
+      describe('on the corresponding method', () => {
+        before(() => {
+          method = serverless.getMethodResourceForFunction(functionWithCachingName);
+        });
 
-      it('should set integration request parameters', () => {
-        for (let parameter of cacheKeyParameters) {
-          expect(method.Properties.Integration.RequestParameters)
-            .to.deep.include({
-              [`integration.${parameter.name}`]: `method.${parameter.name}`
-            });
-        }
-      });
+        it('should configure cache key parameters as request parameters', () => {
+          for (let parameter of cacheKeyParameters) {
+            expect(method.Properties.RequestParameters)
+              .to.deep.include({
+                [`method.${parameter.name}`]: {}
+              });
+          }
+        });
 
-      it('should set integration cache key parameters', () => {
-        for (let parameter of cacheKeyParameters) {
-          expect(method.Properties.Integration.CacheKeyParameters)
-            .to.include(`method.${parameter.name}`);
-        }
-      });
+        it('should set integration request parameters', () => {
+          for (let parameter of cacheKeyParameters) {
+            expect(method.Properties.Integration.RequestParameters)
+              .to.deep.include({
+                [`integration.${parameter.name}`]: `method.${parameter.name}`
+              });
+          }
+        });
 
-      it('should set a cache namespace', () => {
-        expect(method.Properties.Integration.CacheNamespace).to.exist;
+        it('should set integration cache key parameters', () => {
+          for (let parameter of cacheKeyParameters) {
+            expect(method.Properties.Integration.CacheKeyParameters)
+              .to.include(`method.${parameter.name}`);
+          }
+        });
+
+        it('should set a cache namespace', () => {
+          expect(method.Properties.Integration.CacheNamespace).to.exist;
+        });
       });
     });
-  });
+  }
 });
 
 const when_configuring_path_parameters = (serverless) => {
