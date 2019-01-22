@@ -1,5 +1,4 @@
-const chance = require('chance').Chance();
-const pathParams = require(`../../src/pathParametersCache`);
+const split = require('lodash.split');
 
 class Serverless {
   constructor(serviceName) {
@@ -122,6 +121,25 @@ class Serverless {
 
 const clone = object => JSON.parse(JSON.stringify(object));
 
+const createMethodResourceNameFor = (path, method) => {
+  const pathElements = split(path, '/');
+  pathElements.push(method.toLowerCase());
+  let gatewayResourceName = pathElements
+    .map(element => {
+      element = element.toLowerCase();
+      element = element.replaceAll('+', '');
+      element = element.replaceAll('_', '');
+      element = element.replaceAll('.', '');
+      if (element.startsWith('{')) {
+        element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
+      }
+      return element.charAt(0).toUpperCase() + element.slice(1);
+    }).reduce((a, b) => a + b);
+
+  gatewayResourceName = "ApiGatewayMethod" + gatewayResourceName;
+  return gatewayResourceName;
+}
+
 const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverless) => {
   const functionName = Object.keys(serverlessFunction)[0];
   const fullFunctionName = `${serverless.service.service}-${serverless.service.provider.stage}-${functionName}`;
@@ -143,7 +161,7 @@ const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverl
     for (event of events) {
       const path = event.http.path;
       const method = event.http.method;
-      methodResourceName = pathParams.getApiGatewayMethodNameFor(path, method);
+      methodResourceName = createMethodResourceNameFor(path, method);
       Resources[methodResourceName] = methodTemplate;
     }
   }

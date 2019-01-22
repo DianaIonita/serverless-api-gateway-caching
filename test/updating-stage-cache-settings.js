@@ -140,7 +140,7 @@ describe('Updating stage cache settings', () => {
           .withHttpEndpoint('get', '/personal/cat', { enabled: false })
           .withHttpEndpoint('get', '/personal/cat/{catId}', { enabled: false });
         let endpointWithCaching = given.a_serverless_function('get-cat-by-paw-id')
-          .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 })
+          .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45, dataEncrypted: true })
           .withHttpEndpoint('delete', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
         serverless = given.a_serverless_instance()
           .withApiGatewayCachingConfig(true, '0.5', 60)
@@ -211,6 +211,19 @@ describe('Updating stage cache settings', () => {
               value: '45'
             });
           });
+
+          it('should configure data encryption where enabled', () => {
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+              op: 'replace',
+              path: '/~1cat~1{pawId}/GET/caching/dataEncrypted',
+              value: 'true'
+            });
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+              op: 'replace',
+              path: '/~1cat~1{pawId}/DELETE/caching/dataEncrypted',
+              value: 'false'
+            });
+          });
         });
 
         describe('for each endpoint with caching disabled', () => {
@@ -232,6 +245,13 @@ describe('Updating stage cache settings', () => {
               .find(o => o.path == '/~personal~1cat/GET/caching/ttlInSeconds' ||
                     o.path == '/~personal~1cat~1{catId}/GET/caching/ttlInSeconds' );
             expect(ttlOperation).to.not.exist;
+          });
+
+          it('should not configure data encryption', () => {
+            let dataEncryptionOperation = apiGatewayRequest.properties.patchOperations
+              .find(o => o.path == '/~personal~1cat/GET/caching/dataEncryption' ||
+                    o.path == '/~personal~1cat~1{catId}/GET/caching/dataEncryption' );
+            expect(dataEncryptionOperation).to.not.exist;
           });
         });
       });
