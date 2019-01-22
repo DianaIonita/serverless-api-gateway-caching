@@ -1,4 +1,3 @@
-const isEmpty = require('lodash.isempty');
 const get = require('lodash.get');
 const { Ignore, IgnoreWithWarning, Fail } = require('./UnauthorizedCacheControlHeaderStrategy');
 
@@ -54,7 +53,7 @@ class ApiGatewayEndpointCachingSettings {
     }
     let cachingConfig = event.http.caching;
     this.cachingEnabled = globalSettings.cachingEnabled ? cachingConfig.enabled : false;
-    this.cacheDataEncrypted = cachingConfig.dataEncrypted || globalSettings.cacheDataEncrypted;
+    this.dataEncrypted = cachingConfig.dataEncrypted || globalSettings.dataEncrypted;
     this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
     this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
     
@@ -84,8 +83,8 @@ class ApiGatewayCachingSettings {
     this.endpointSettings = [];
 
     this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
-    this.cacheDataEncrypted = serverless.service.custom.apiGatewayCaching.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
     this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds || DEFAULT_TTL;
+    this.dataEncrypted = serverless.service.custom.apiGatewayCaching.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
 
     this.perKeyInvalidation = new PerKeyInvalidationSettings(serverless.service.custom.apiGatewayCaching);
 

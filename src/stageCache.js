@@ -43,14 +43,14 @@ const patchForMethod = (path, method, endpointSettings) => {
   if (endpointSettings.cachingEnabled) {
     patch.push({
       op: 'replace',
-      path: `/${patchPath}/caching/dataEncrypted`,
-      value: `${endpointSettings.cacheDataEncrypted}`
+      path: `/${patchPath}/caching/ttlInSeconds`,
+      value: `${endpointSettings.cacheTtlInSeconds}`
     });
     patch.push({
       op: 'replace',
-      path: `/${patchPath}/caching/ttlInSeconds`,
-      value: `${endpointSettings.cacheTtlInSeconds}`
-    })
+      path: `/${patchPath}/caching/dataEncrypted`,
+      value: `${endpointSettings.dataEncrypted}`
+    });
   }
   if (endpointSettings.perKeyInvalidation) {
     patch.push({
@@ -71,8 +71,8 @@ const patchForMethod = (path, method, endpointSettings) => {
 
 const httpEventOf = (lambda, endpointSettings) => {
   return lambda.events.filter(e => e.http != undefined)
-                      .filter(e => e.http.path === endpointSettings.path || "/" + e.http.path === endpointSettings.path)
-                      .filter(e => e.http.method.toUpperCase() === endpointSettings.method.toUpperCase());
+    .filter(e => e.http.path === endpointSettings.path || "/" + e.http.path === endpointSettings.path)
+    .filter(e => e.http.method.toUpperCase() === endpointSettings.method.toUpperCase());
 }
 
 const createPatchForEndpoint = (endpointSettings, serverless) => {
@@ -81,7 +81,7 @@ const createPatchForEndpoint = (endpointSettings, serverless) => {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined events.`);
     return;
   }
-  const httpEvents = httpEventOf(lambda,endpointSettings);
+  const httpEvents = httpEventOf(lambda, endpointSettings);
   if (isEmpty(httpEvents)) {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined any HTTP events.`);
     return;
