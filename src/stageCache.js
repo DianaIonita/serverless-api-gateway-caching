@@ -43,6 +43,11 @@ const patchForMethod = (path, method, endpointSettings) => {
   if (endpointSettings.cachingEnabled) {
     patch.push({
       op: 'replace',
+      path: `/${patchPath}/caching/dataEncrypted`,
+      value: `${endpointSettings.cacheDataEncrypted}`
+    });
+    patch.push({
+      op: 'replace',
       path: `/${patchPath}/caching/ttlInSeconds`,
       value: `${endpointSettings.cacheTtlInSeconds}`
     })
