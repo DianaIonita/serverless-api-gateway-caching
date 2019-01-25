@@ -511,6 +511,32 @@ describe('Creating settings', () => {
       });
     });
   });
+
+  describe('when a http endpoint is defined in shorthand', () => {
+    describe(`and caching is turned on globally`, () => {
+      before(() => {
+        endpoint = given.a_serverless_function('list-cats')
+          .withHttpEndpointInShorthand('get /cats');
+        serverless = given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true)
+          .withFunction(endpoint);
+
+        cacheSettings = createSettingsFor(serverless);
+      });
+
+      it('settings should contain the endpoint method', () => {
+        expect(cacheSettings.endpointSettings[0].method).to.equal('get');
+      });
+
+      it('settings should contain the endpoint path', () => {
+        expect(cacheSettings.endpointSettings[0].path).to.equal('/cats');
+      });
+
+      it('caching should not be enabled for the http endpoint', () => {
+        expect(cacheSettings.endpointSettings[0].cachingEnabled).to.be.false;
+      });
+    });
+  });
 });
 
 const createSettingsFor = (serverless, options) => {

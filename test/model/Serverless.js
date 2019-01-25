@@ -159,8 +159,17 @@ const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverl
     methodResourceName = `ApiGatewayMethod${functionName}VarGet`;
   } else {
     for (event of events) {
-      const path = event.http.path;
-      const method = event.http.method;
+      // if event is defined in shorthand
+      let path, method;
+      if (typeof (event.http) === 'string') {
+        let parts = event.http.split(' ');
+        method = parts[0];
+        path = parts[1];
+      }
+      else {
+        path = event.http.path;
+        method = event.http.method;
+      }
       methodResourceName = createMethodResourceNameFor(path, method);
       Resources[methodResourceName] = methodTemplate;
     }
