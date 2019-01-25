@@ -70,9 +70,24 @@ const patchForMethod = (path, method, endpointSettings) => {
 }
 
 const httpEventOf = (lambda, endpointSettings) => {
-  return lambda.events.filter(e => e.http != undefined)
-    .filter(e => e.http.path === endpointSettings.path || "/" + e.http.path === endpointSettings.path)
-    .filter(e => e.http.method.toUpperCase() === endpointSettings.method.toUpperCase());
+  let httpEvents = lambda.events.filter(e => e.http != undefined)
+    .map(e => {
+      if (typeof (e.http) === 'string') {
+        let parts = e.http.split(' ');
+        return {
+          method: parts[0],
+          path: parts[1]
+        }
+      } else {
+        return {
+          method: e.http.method,
+          path: e.http.path
+        }
+      }
+    });
+
+  return httpEvents.filter(e => e.path = endpointSettings.path || "/" + e.path === endpointSettings.path)
+    .filter(e => e.method.toUpperCase() == endpointSettings.method.toUpperCase());
 }
 
 const createPatchForEndpoint = (endpointSettings, serverless) => {
@@ -86,7 +101,7 @@ const createPatchForEndpoint = (endpointSettings, serverless) => {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined any HTTP events.`);
     return;
   }
-  let { path, method } = httpEvents[0].http;
+  let { path, method } = httpEvents[0];
 
   let patch = [];
   if (method.toUpperCase() == 'ANY') {

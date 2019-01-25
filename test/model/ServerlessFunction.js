@@ -21,6 +21,16 @@ class ServerlessFunction {
 
     return this;
   }
+
+  withHttpEndpointInShorthand(shorthand) {
+    let f = this.getFunction();
+    if (!f.events) { f.events = []; }
+    f.events.push({
+      http: shorthand
+    });
+
+    return this;
+  }
 }
 
 module.exports = ServerlessFunction;
