@@ -243,14 +243,14 @@ describe('Updating stage cache settings', () => {
           it('should not set the cache time to live', () => {
             let ttlOperation = apiGatewayRequest.properties.patchOperations
               .find(o => o.path == '/~personal~1cat/GET/caching/ttlInSeconds' ||
-                    o.path == '/~personal~1cat~1{catId}/GET/caching/ttlInSeconds' );
+                o.path == '/~personal~1cat~1{catId}/GET/caching/ttlInSeconds');
             expect(ttlOperation).to.not.exist;
           });
 
           it('should not configure data encryption', () => {
             let dataEncryptionOperation = apiGatewayRequest.properties.patchOperations
               .find(o => o.path == '/~personal~1cat/GET/caching/dataEncryption' ||
-                    o.path == '/~personal~1cat~1{catId}/GET/caching/dataEncryption' );
+                o.path == '/~personal~1cat~1{catId}/GET/caching/dataEncryption');
             expect(dataEncryptionOperation).to.not.exist;
           });
         });
@@ -481,6 +481,34 @@ describe('Updating stage cache settings', () => {
         });
       });
     }
+  });
+
+  describe('When an http endpoint is defined in shorthand', () => {
+    before(async () => {
+      let endpoint = given.a_serverless_function('list-cats')
+        .withHttpEndpointInShorthand('get /cats');
+
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true)
+        .withFunction(endpoint)
+        .forStage('somestage');
+      settings = new ApiGatewayCachingSettings(serverless);
+
+      restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
+
+      await when_updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
+      apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+    });
+
+    it(`should disable caching for the endpoint`, () => {
+      expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+        op: 'replace',
+        path: `/~1cats/GET/caching/enabled`,
+        value: 'false'
+      });
+    });
   });
 });
 
