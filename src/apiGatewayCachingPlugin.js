@@ -39,6 +39,7 @@ class ApiGatewayCachingPlugin {
   }
 
   updateStage() {
+    this.thereIsARestApi = restApiExists(this.serverless);
     if (!this.thereIsARestApi) {
       this.serverless.cli.log(`[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.`);
       return;
