@@ -1,7 +1,7 @@
 const chai = require('chai');
 const sinon = require('sinon');
 const sinonChai = require('sinon-chai');
-const ApiGatewayCachingPlugin = require('../src/ApiGatewayCachingPlugin');
+const ApiGatewayCachingPlugin = require('../src/apiGatewayCachingPlugin');
 const ApiGatewayCachingSettings = require('../src/ApiGatewayCachingSettings');
 const expect = chai.expect;
 
