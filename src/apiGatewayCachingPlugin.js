@@ -21,7 +21,11 @@ class ApiGatewayCachingPlugin {
     this.settings = new ApiGatewayCachingSettings(this.serverless, this.options);
   }
 
-  updateCloudFormationTemplate() {
+  updateCloudFormationTemplate({
+    restApiExists = restApiExists,
+    outputRestApiIdTo = outputRestApiIdTo,
+    pathParametersCache = pathParametersCache,
+  } = {}) {
     this.thereIsARestApi = restApiExists(this.serverless);
     if (!this.thereIsARestApi) {
       this.serverless.cli.log(`[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.`);
@@ -38,12 +42,20 @@ class ApiGatewayCachingPlugin {
     return pathParametersCache.addPathParametersCacheConfig(this.settings, this.serverless);
   }
 
-  updateStage() {
+  updateStage({
+    restApiExists = restApiExists,
+    updateStageCacheSettings = updateStageCacheSettings,
+  } = {}) {
     this.thereIsARestApi = restApiExists(this.serverless);
     if (!this.thereIsARestApi) {
       this.serverless.cli.log(`[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.`);
       return;
     }
+
+    if (!this.settings) {
+      this.createSettings()
+    }
+
     return updateStageCacheSettings(this.settings, this.serverless);
   }
 }
