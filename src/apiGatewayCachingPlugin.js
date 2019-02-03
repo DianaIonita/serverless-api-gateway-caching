@@ -44,6 +44,11 @@ class ApiGatewayCachingPlugin {
       this.serverless.cli.log(`[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.`);
       return;
     }
+
+    if (!this.settings) {
+      this.createSettings()
+    }
+
     return updateStageCacheSettings(this.settings, this.serverless);
   }
 }
