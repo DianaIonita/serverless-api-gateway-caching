@@ -29,6 +29,11 @@ const createPatchForStage = (settings) => {
       path: '/cacheClusterSize',
       value: `${settings.cacheClusterSize}`
     });
+    patch.push({
+      op: 'replace',
+      path: '/*/*/caching/dataEncrypted',
+      value: `${settings.dataEncrypted}`
+    });
   }
   return patch;
 }
