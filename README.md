@@ -62,6 +62,19 @@ functions:
             cacheKeyParameters:
               - name: request.path.pawId
               - name: request.header.Accept-Language
+
+  # Responses are cached based on the 'breed' query string parameter and the 'Accept-Language' header
+  get-cats-by-breed:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.querystring.breed
+              - name: request.header.Accept-Language
 ```
 
 ### Configuring the cache cluster size and cache time to live
