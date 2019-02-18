@@ -422,6 +422,10 @@ describe('Configuring path parameter caching', () => {
     {
       description: 'contains the \'_\' special character',
       httpEndpointPath: '/cat/{paw_id}'
+    },
+    {
+      description: 'contains the \'-\' special character',
+      httpEndpointPath: 'cat-list'
     }
   ];
   for (let { description, httpEndpointPath } of specialCharacterScenarios) {
