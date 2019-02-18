@@ -131,6 +131,7 @@ const createMethodResourceNameFor = (path, method) => {
       element = element.replaceAll('+', '');
       element = element.replaceAll('_', '');
       element = element.replaceAll('.', '');
+      element = element.replaceAll('-', 'Dash');
       if (element.startsWith('{')) {
         element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
       }
