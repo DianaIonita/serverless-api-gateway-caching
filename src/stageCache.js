@@ -147,6 +147,9 @@ const updateStageFor = async (serverless, params, stage, region) => {
       });
     }
   }
+  else {
+    paramsInChunks.push(params);
+  }
 
   for (let index in paramsInChunks) {
     serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings. ${index} of ${paramsInChunks.length}`);
