@@ -22,9 +22,20 @@ const a_rest_api_id_for_deployment = async (serverless, settings) => {
   return restApiId;
 }
 
+const endpoints_with_caching_enabled = (endpointCount) => {
+  let result = [];
+  for (let i = 0; i < endpointCount; i++) {
+    result.push(
+      a_serverless_function(chance.word())
+        .withHttpEndpoint('GET', `/${chance.word()}`, { enabled: true }));
+  }
+  return result;
+}
+
 module.exports = {
   a_serverless_instance,
   a_serverless_function,
   a_rest_api_id,
-  a_rest_api_id_for_deployment
+  a_rest_api_id_for_deployment,
+  endpoints_with_caching_enabled
 }

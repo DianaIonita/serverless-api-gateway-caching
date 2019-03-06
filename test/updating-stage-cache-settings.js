@@ -518,6 +518,58 @@ describe('Updating stage cache settings', () => {
       });
     });
   });
+
+  // https://github.com/DianaIonita/serverless-api-gateway-caching/issues/46
+  describe('When there are over twenty two http endpoints defined', () => {
+    let requestsToAwsToUpdateStage, restApiId, expectedStageName;
+    before(async () => {
+      let endpoints = given.endpoints_with_caching_enabled(23);
+
+      expectedStageName = 'somestage';
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true, '0.5', 60)
+        .forStage(expectedStageName);
+      for (let endpoint of endpoints) {
+        serverless = serverless.withFunction(endpoint)
+      }
+
+      settings = new ApiGatewayCachingSettings(serverless);
+
+      restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
+
+      await when_updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
+      requestsToAwsToUpdateStage = requestsToAws.filter(r => r.method == 'updateStage');
+    });
+
+    it('should send two requests to update stage', () => {
+      expect(requestsToAwsToUpdateStage).to.have.lengthOf(2);
+    });
+
+    describe('each request to update stage', () => {
+      let firstRequestToUpdateStage, secondRequestToUpdateStage;
+      before(() => {
+        firstRequestToUpdateStage = requestsToAwsToUpdateStage[0];
+        secondRequestToUpdateStage = requestsToAwsToUpdateStage[1];
+      });
+
+      it('should specify the Rest Api Id', () => {
+        expect(firstRequestToUpdateStage.properties.restApiId).to.equal(restApiId);
+        expect(secondRequestToUpdateStage.properties.restApiId).to.equal(restApiId);
+      });
+
+      it('should specify the stage name', () => {
+        expect(firstRequestToUpdateStage.properties.stageName).to.equal(expectedStageName);
+        expect(secondRequestToUpdateStage.properties.stageName).to.equal(expectedStageName);
+      });
+
+      it('should not contain more than 80 patch operations', () => {
+        expect(firstRequestToUpdateStage.properties.patchOperations).to.have.length.at.most(80);
+        expect(secondRequestToUpdateStage.properties.patchOperations).to.have.length.at.most(80);
+      });
+    });
+  });
 });
 
 const when_updating_stage_cache_settings = async (settings, serverless) => {

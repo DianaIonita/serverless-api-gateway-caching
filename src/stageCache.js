@@ -1,5 +1,6 @@
 const isEmpty = require('lodash.isempty');
 const { retrieveRestApiId } = require('./restApiId');
+const MAX_PATCH_OPERATIONS_PER_STAGE_UPDATE = 80;
 
 String.prototype.replaceAll = function (search, replacement) {
   let target = this;
@@ -133,6 +134,28 @@ const patchPathFor = (path, method) => {
   return patchPath;
 }
 
+const updateStageFor = async (serverless, params, stage, region) => {
+  const chunkSize = MAX_PATCH_OPERATIONS_PER_STAGE_UPDATE;
+  const { patchOperations } = params;
+  const paramsInChunks = [];
+  if (patchOperations.length > chunkSize) {
+    for (let i = 0; i < patchOperations.length; i += chunkSize) {
+      paramsInChunks.push({
+        restApiId: params.restApiId,
+        stageName: params.stageName,
+        patchOperations: patchOperations.slice(i, i + chunkSize)
+      });
+    }
+  }
+
+  for (let index in paramsInChunks) {
+    serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings. ${index} of ${paramsInChunks.length}`);
+    await serverless.providers.aws.request('APIGateway', 'updateStage', paramsInChunks[index], stage, region);
+  }
+
+  serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
+}
+
 const updateStageCacheSettings = async (settings, serverless) => {
   // do nothing if caching settings are not defined
   if (settings.cachingEnabled == undefined) {
@@ -158,9 +181,7 @@ const updateStageCacheSettings = async (settings, serverless) => {
     patchOperations: patchOps
   }
 
-  serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings.`);
-  await serverless.providers.aws.request('APIGateway', 'updateStage', params, settings.stage, settings.region);
-  serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
+  await updateStageFor(serverless, params, settings.stage, settings.region);
 }
 
 module.exports = updateStageCacheSettings;
