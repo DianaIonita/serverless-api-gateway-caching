@@ -53,7 +53,7 @@ const addPathParametersCacheConfig = (settings, serverless) => {
       let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
       method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
 
-      if (method.Properties.Type !== 'AWS_PROXY') {
+      if (method.Properties.Integration.Type !== 'AWS_PROXY') {
         method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
       }
 
