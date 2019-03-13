@@ -52,7 +52,9 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
       let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
       method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
-      method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
+      If ( method.Properties.Integration.Type !== 'AWS_PROXY') {
+        method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
+      }
       method.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
     }
     method.Properties.Integration.CacheNamespace = `${resourceName}CacheNS`;
