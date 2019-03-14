@@ -173,6 +173,11 @@ const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverl
         method = event.http.method;
       }
       methodResourceName = createMethodResourceNameFor(path, method);
+      if (event.http.integration == 'lambda') {
+        methodTemplate.Properties.Integration.Type = 'AWS_PROXY';
+      } else {
+        methodTemplate.Properties.Integration.Type = 'AWS';
+      }
       Resources[methodResourceName] = methodTemplate;
     }
   }
