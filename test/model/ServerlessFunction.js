@@ -8,16 +8,21 @@ class ServerlessFunction {
     return this[Object.keys(this)[0]];
   }
 
-  withHttpEndpoint(method, path, caching) {
+  withHttpEndpoint(method, path, caching, withLambdaIntegration) {
     let f = this.getFunction();
     if (!f.events) { f.events = []; }
+
+    const http = {
+      path,
+      method,
+      caching
+    }
+    if (withLambdaIntegration) {
+      http.integration = 'lambda'
+    }
     f.events.push({
-      http: {
-        path,
-        method,
-        caching
-      }
-    })
+      http
+    });
 
     return this;
   }
