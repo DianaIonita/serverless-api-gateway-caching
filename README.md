@@ -127,3 +127,26 @@ functions:
               - name: request.path.pawId
               - name: request.header.Accept-Language
 ```
+
+
+### Configuring a shared api gateway
+No modifications will be applied to the root caching configuration of the api gateway,  
+Cache time to live, invalidation settings and data encryption are applied to all functions, unless specifically overridden.
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  # Enable or disable caching globally
+  apiGatewayCaching:
+    enabled: true
+    apiGatewayIsShared: true
+    clusterSize: '0.5' # defaults to '0.5'
+    ttlInSeconds: 300 # defaults to the maximum allowed: 3600
+    dataEncrypted: true # defaults to false
+    perKeyInvalidation:
+      requireAuthorization: true # default is true
+      handleUnauthorizedRequests: Ignore # default is "IgnoreWithWarning"
+
+```

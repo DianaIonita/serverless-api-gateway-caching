@@ -77,7 +77,7 @@ describe('Updating stage cache settings', () => {
     });
   });
 
-  describe('When api gateway caching is true but api gateway is inherited', () => {
+  describe('When api gateway caching is true but api gateway is shared', () => {
     let restApiId;
 
     describe('and there are no endpoints for which to enable caching', () => {
@@ -108,7 +108,7 @@ describe('Updating stage cache settings', () => {
           .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45, dataEncrypted: true })
           .withHttpEndpoint('delete', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 60, undefined, undefined, true)
+          .withApiGatewayCachingConfig(true, '0.5', 60, undefined, false, true)
           .withFunction(endpointWithCaching)
           .withFunction(endpointWithoutCaching)
           .forStage('somestage');
@@ -143,10 +143,14 @@ describe('Updating stage cache settings', () => {
         it('should leave caching untouched', noOperationAreExpectedForPath ('/cacheClusterEnabled'));
 
         it('should leave the cache cluster size untouched', noOperationAreExpectedForPath ('/cacheClusterSize'));
-
-        it('should leave the TTL untouched', noOperationAreExpectedForPath ('/ttlInSeconds'));
-
-        it('should leave the dataEncrypted untouched', noOperationAreExpectedForPath ('/*/*/caching/dataEncrypted'));
+        
+        it('should set the cache encryption', () => {
+          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+            op: 'replace',
+            path: '/*/*/caching/dataEncrypted',
+            value: 'false'
+          });
+        });
         
         describe('for the endpoint with caching enabled', () => {
           it('should enable caching', () => {
