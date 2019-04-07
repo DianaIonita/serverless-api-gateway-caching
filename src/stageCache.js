@@ -19,6 +19,10 @@ const escapeJsonPointer = path => {
 }
 
 const createPatchForStage = (settings) => {
+  if (settings.apiGatewayIsShared) {
+    return [];
+  }
+
   let patch = [{
     op: 'replace',
     path: '/cacheClusterEnabled',
