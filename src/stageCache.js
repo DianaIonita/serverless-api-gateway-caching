@@ -19,16 +19,9 @@ const escapeJsonPointer = path => {
 }
 
 const createPatchForStage = (settings) => {
-  const createDataEncryptedPatch = () => {
-    return {
-      op: 'replace',
-      path: '/*/*/caching/dataEncrypted',
-      value: `${settings.dataEncrypted}`
-    };
-  }
 
   if (settings.apiGatewayIsShared) {
-    return [createDataEncryptedPatch()];
+    return [];
   }
 
   let patch = [{
@@ -43,7 +36,11 @@ const createPatchForStage = (settings) => {
       path: '/cacheClusterSize',
       value: `${settings.cacheClusterSize}`
     });
-    patch.push(createDataEncryptedPatch());
+    patch.push({
+      op: 'replace',
+      path: '/*/*/caching/dataEncrypted',
+      value: `${settings.dataEncrypted}`
+    });
   }
   return patch;
 }

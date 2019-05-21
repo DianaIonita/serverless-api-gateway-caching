@@ -144,14 +144,6 @@ describe('Updating stage cache settings', () => {
 
         it('should leave the cache cluster size untouched', noOperationAreExpectedForPath ('/cacheClusterSize'));
         
-        it('should set the cache encryption', () => {
-          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
-            op: 'replace',
-            path: '/*/*/caching/dataEncrypted',
-            value: 'false'
-          });
-        });
-        
         describe('for the endpoint with caching enabled', () => {
           it('should enable caching', () => {
             expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
