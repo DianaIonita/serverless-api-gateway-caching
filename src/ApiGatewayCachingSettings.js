@@ -78,6 +78,7 @@ class ApiGatewayCachingSettings {
       return;
     }
     this.cachingEnabled = serverless.service.custom.apiGatewayCaching.enabled;
+    this.apiGatewayIsShared = serverless.service.custom.apiGatewayCaching.apiGatewayIsShared;
 
     if (options) {
       this.stage = options.stage || serverless.service.provider.stage;
