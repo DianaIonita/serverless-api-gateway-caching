@@ -36,12 +36,20 @@ const createPatchForStage = (settings) => {
       path: '/cacheClusterSize',
       value: `${settings.cacheClusterSize}`
     });
+
     patch.push({
       op: 'replace',
       path: '/*/*/caching/dataEncrypted',
-      value: `${settings.dataEncrypted}`
+      value: `${settings.dataEncrypted}`    
+    });
+
+    patch.push({
+      op: 'replace',
+      path: '/*/*/caching/ttlInSeconds',
+      value: `${settings.cacheTtlInSeconds}`
     });
   }
+  
   return patch;
 }
 

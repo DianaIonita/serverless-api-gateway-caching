@@ -248,8 +248,8 @@ describe('Updating stage cache settings', () => {
           expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
         });
 
-        it('should specify exactly three patch operations', () => {
-          expect(apiGatewayRequest.properties.patchOperations).to.have.lengthOf(3);
+        it('should specify exactly four patch operations', () => {
+          expect(apiGatewayRequest.properties.patchOperations).to.have.lengthOf(4);
         })
 
         it('should enable caching', () => {
@@ -273,6 +273,14 @@ describe('Updating stage cache settings', () => {
             op: 'replace',
             path: '/*/*/caching/dataEncrypted',
             value: 'false'
+          });
+        });
+
+        it('should set the cache ttlInSeconds', () => {
+          expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+            op: 'replace',
+            path: '/*/*/caching/ttlInSeconds',
+            value: '60'
           });
         });
 
