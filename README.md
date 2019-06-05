@@ -18,6 +18,17 @@ You can configure how to handle unauthorized requests to invalidate a cache key 
 * `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response.
 * `Fail` - fails the request to invalidate the cache key with a 403 response status code.
 
+## Cache key parameters
+You would define these for endpoints where the response varies according to one or more request parameters. API Gateway creates entries in the cache keyed based on them. Note that cache key parameters are case sensitive.
+Specifying where the request parameters can be found:
+- request.path.PARAM_NAME
+- request.querystring.PARAM_NAME
+- request.multivaluequerystring.PARAM_NAME
+- request.header.PARAM_NAME
+- request.multivalueheader.PARAM_NAME
+- request.body
+- request.body.JSONPath_EXPRESSION
+
 ## Examples
 
 ### Minimal setup
