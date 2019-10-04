@@ -9,6 +9,7 @@ A plugin for the serverless framework which helps with configuring caching for A
 * If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
 However, disabling caching globally disables it across endpoints.
 * If you don't specify `ttlInSeconds` and `perKeyInvalidation` for an endpoint which has caching enabled, these settings are inherited from global settings.
+* `clusterSize` configuration is only allowed as global setting in AWS, so this parameter must be configured in the global section and will be ignored if it is found in the endpoint configuration level. 
 * For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
 
 ## Per-key cache invalidation
