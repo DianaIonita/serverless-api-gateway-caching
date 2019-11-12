@@ -9,6 +9,7 @@ A plugin for the serverless framework which helps with configuring caching for A
 * If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
 However, disabling caching globally disables it across endpoints.
 * If you don't specify `ttlInSeconds` and `perKeyInvalidation` for an endpoint which has caching enabled, these settings are inherited from global settings.
+* `clusterSize` configuration is only allowed as global setting in AWS, so this parameter must be configured in the global section and will be ignored if it is found in the endpoint configuration level. 
 * For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
 
 ## Per-key cache invalidation
@@ -17,6 +18,18 @@ You can configure how to handle unauthorized requests to invalidate a cache key 
 * `Ignore` - ignores the request to invalidate the cache key.
 * `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response.
 * `Fail` - fails the request to invalidate the cache key with a 403 response status code.
+
+## Cache key parameters
+You would define these for endpoints where the response varies according to one or more request parameters. API Gateway creates entries in the cache keyed based on them. Note that cache key parameters are case sensitive.
+Specifying where the request parameters can be found:
+- request.path.PARAM_NAME
+- request.querystring.PARAM_NAME
+- request.multivaluequerystring.PARAM_NAME
+- request.header.PARAM_NAME
+- request.multivalueheader.PARAM_NAME
+
+## Limitations
+I don't currently know of a way to define cache key parameters based on the `request.body` or `request.body.JSONPath_EXPRESSION`, which should theoretically be possible according to [AWS Documentation on request parameter mapping](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html). See [this issue](https://github.com/DianaIonita/serverless-api-gateway-caching/issues/63) for details.
 
 ## Examples
 
