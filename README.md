@@ -27,8 +27,9 @@ Specifying where the request parameters can be found:
 - request.multivaluequerystring.PARAM_NAME
 - request.header.PARAM_NAME
 - request.multivalueheader.PARAM_NAME
-- request.body
-- request.body.JSONPath_EXPRESSION
+
+## Limitations
+I don't currently know of a way to define cache key parameters based on the `request.body` or `request.body.JSONPath_EXPRESSION`, which should theoretically be possible according to [AWS Documentation on request parameter mapping](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html). See [this issue](https://github.com/DianaIonita/serverless-api-gateway-caching/issues/63) for details.
 
 ## Examples
 
