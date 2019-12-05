@@ -28,9 +28,6 @@ Specifying where the request parameters can be found:
 - request.header.PARAM_NAME
 - request.multivalueheader.PARAM_NAME
 
-## Limitations
-I don't currently know of a way to define cache key parameters based on the `request.body` or `request.body.JSONPath_EXPRESSION`, which should theoretically be possible according to [AWS Documentation on request parameter mapping](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html). See [this issue](https://github.com/DianaIonita/serverless-api-gateway-caching/issues/63) for details.
-
 ## Examples
 
 ### Minimal setup
@@ -62,6 +59,21 @@ functions:
       - http:
           path: /cat
           method: post
+  
+  # Responses are cached based on the 'pawId' path parameter and authorizer sub.
+  get-cat-by-paw-id:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats/{pawId}
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: integration.request.path.pawId
+                value: method.request.path.pawId
+              - name: integration.request.header.authorizerSubCache
+                value: context.authorizer.claims.sub
 
   # Responses are cached based on the 'pawId' path parameter and the 'Accept-Language' header
   get-cat-by-paw-id:
@@ -73,8 +85,10 @@ functions:
           caching:
             enabled: true
             cacheKeyParameters:
-              - name: request.path.pawId
-              - name: request.header.Accept-Language
+              - name: integration.request.path.pawId
+                value: method.request.path.pawId
+              - name: integration.request.header.Accept-Language
+                value: method.request.header.Accept-Language
 
   # Responses are cached based on the 'breed' query string parameter and the 'Accept-Language' header
   get-cats-by-breed:
@@ -86,8 +100,10 @@ functions:
           caching:
             enabled: true
             cacheKeyParameters:
-              - name: request.querystring.breed
-              - name: request.header.Accept-Language
+              - name: integration.request.querystring.breed
+                value: method.request.querystring.breed
+              - name: integration.request.header.Accept-Language
+                value: method.request.querystring.breed
 ```
 
 ### Configuring the cache cluster size and cache time to live
@@ -137,8 +153,10 @@ functions:
               requireAuthorization: true # default is true
               handleUnauthorizedRequests: Fail # default is "IgnoreWithWarning"
             cacheKeyParameters:
-              - name: request.path.pawId
-              - name: request.header.Accept-Language
+              - name: integration.request.path.pawId
+                value: method.request.path.pawId
+              - name: integration.request.header.Accept-Language
+                value: method.request.header.Accept-Language
 ```
 
 
