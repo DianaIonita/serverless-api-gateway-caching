@@ -32,7 +32,7 @@ const getApiGatewayMethodNameFor = (path, httpMethod) => {
 
 const addPathParametersCacheConfig = (settings, serverless) => {
   for (let endpointSettings of settings.endpointSettings) {
-    if (!endpointSettings.cacheKeyParameters) {
+    if (!endpointSettings.cacheKeyParameters || !endpointSettings.cachingEnabled) {
       continue;
     }
     const resourceName = getApiGatewayMethodNameFor(endpointSettings.path, endpointSettings.method);
