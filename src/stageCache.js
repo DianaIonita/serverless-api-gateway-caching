@@ -192,6 +192,12 @@ const updateStageCacheSettings = async (settings, serverless) => {
     let endpointPatch = createPatchForEndpoint(endpointSettings, serverless);
     patchOps = patchOps.concat(endpointPatch);
   }
+
+  for(const methodSetting of settings.methodSettings) {
+    const endpointPatch = patchForMethod(methodSetting.path, methodSetting.method, methodSetting);
+    patchOps = patchOps.concat(endpointPatch);
+  }
+
   let params = {
     restApiId,
     stageName: settings.stage,

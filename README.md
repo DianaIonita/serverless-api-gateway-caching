@@ -163,3 +163,51 @@ custom:
       handleUnauthorizedRequests: Ignore # default is "IgnoreWithWarning"
 
 ```
+
+### Configuring for http proxies
+You may have additional API Gateway integrations such as an [HTTP Proxy](https://serverless.com/framework/docs/providers/aws/events/apigateway/#setting-an-http-proxy-on-api-gateway).    
+In this case, you can configure add configure method settings like so:
+```yaml
+
+# as described on https://serverless.com/framework/docs/providers/aws/events/apigateway/#setting-an-http-proxy-on-api-gateway
+
+resources:
+  Resources:
+    ProxyResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi # our default Rest API logical ID
+            - RootResourceId
+        PathPart: serverless # the endpoint in your API that is set as proxy
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Ref: ProxyResource
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: GET # the method of your proxy. Is it GET or POST or ... ?
+        MethodResponses:
+          - StatusCode: 200
+        Integration:
+          IntegrationHttpMethod: POST
+          Type: HTTP
+          Uri: http://serverless.com # the URL you want to set a proxy to
+          IntegrationResponses:
+            - StatusCode: 200
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+    clusterSize: '0.5'
+    ttlInSeconds: 3600
+    methodSettings:
+      - method: GET
+        path: '/serverless'
+        cachingEnabled: true
+        cacheTtlInSeconds: 3600
+```  
