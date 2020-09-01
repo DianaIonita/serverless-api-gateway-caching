@@ -50,14 +50,29 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     }
 
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
-      let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
-      method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
+      if (!cacheKeyParameter.value) {
+        let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
+        method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
 
-      if (method.Properties.Integration.Type !== 'AWS_PROXY') {
-        method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
+        if (method.Properties.Integration.Type !== 'AWS_PROXY') {
+          method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
+        }
+
+        method.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
+      } else {
+        let existingValue = method.Properties.RequestParameters[cacheKeyParameter.value];
+        if (
+          cacheKeyParameter.value.includes('method.request.querystring') ||
+          cacheKeyParameter.value.includes('method.request.header') ||
+          cacheKeyParameter.value.includes('method.request.path')
+        ) {
+          method.Properties.RequestParameters[cacheKeyParameter.value] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
+        }
+        if (method.Properties.Integration.Type !== 'AWS_PROXY') {
+          method.Properties.Integration.RequestParameters[cacheKeyParameter.name] = cacheKeyParameter.value;
+        }
+        method.Properties.Integration.CacheKeyParameters.push(cacheKeyParameter.name)
       }
-
-      method.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
     }
     method.Properties.Integration.CacheNamespace = `${resourceName}CacheNS`;
   }

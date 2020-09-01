@@ -28,8 +28,15 @@ Specifying where the request parameters can be found:
 - request.header.PARAM_NAME
 - request.multivalueheader.PARAM_NAME
 
-## Limitations
-I don't currently know of a way to define cache key parameters based on the `request.body` or `request.body.JSONPath_EXPRESSION`, which should theoretically be possible according to [AWS Documentation on request parameter mapping](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html). See [this issue](https://github.com/DianaIonita/serverless-api-gateway-caching/issues/63) for details.
+### Mapped cache key parameters
+In order to define cache key parameters based on `request.body` or `request.body.JSONPath_EXPRESSION`, you must set up a header mapping from the client method request to the integration request.
+
+For example, to cache POST requests by `request.body`, use the following configuration:
+```yaml
+cacheKeyParameters:
+  - name: integration.request.header.bodyCacheHeader
+    value: method.request.body
+```
 
 ## Examples
 
@@ -88,6 +95,31 @@ functions:
             cacheKeyParameters:
               - name: request.querystring.breed
               - name: request.header.Accept-Language
+
+  # Example setup for a graphql endpoint:
+  # - Cache responses for GET requests based on the 'query' query string parameter
+  # - Cache responses for POST requests based on request body
+  #   (note: you must use the lambda integration instead of the lambda proxy integration 
+  #    in order for this to work)
+  cats-graphql:
+    handler: graphql/handler.handle
+    events:
+      - http:
+          path: /graphql
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.querystring.query
+      - http:
+          path: /graphql
+          method: post
+          integration: lambda
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: integration.request.header.bodyCacheHeader
+                value: method.request.body
 ```
 
 ### Configuring the cache cluster size and cache time to live
