@@ -22,14 +22,19 @@ You can configure how to handle unauthorized requests to invalidate a cache key 
 ## Cache key parameters
 You would define these for endpoints where the response varies according to one or more request parameters. API Gateway creates entries in the cache keyed based on them. Note that cache key parameters are case sensitive.
 Specifying where the request parameters can be found:
-- request.path.PARAM_NAME
-- request.querystring.PARAM_NAME
-- request.multivaluequerystring.PARAM_NAME
-- request.header.PARAM_NAME
-- request.multivalueheader.PARAM_NAME
+- `request.path.PARAM_NAME`
+- `request.querystring.PARAM_NAME`
+- `request.header.PARAM_NAME`
+
 
 ## Limitations
-I don't currently know of a way to define cache key parameters based on the `request.body` or `request.body.JSONPath_EXPRESSION`, which should theoretically be possible according to [AWS Documentation on request parameter mapping](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html). See [this issue](https://github.com/DianaIonita/serverless-api-gateway-caching/issues/63) for details.
+I don't currently know of a way to define cache key parameters based on:
+- `request.multivaluequerystring`
+- `request.multivalueheader`
+- `request.body`
+- `request.body.JSONPath_EXPRESSION`
+
+It should theoretically be possible according to [AWS Documentation on request parameter mapping](https://docs.aws.amazon.com/apigateway/latest/developerguide/request-response-data-mappings.html), but I could not find a way to do that in the AWS console. More details in [this issue](https://github.com/DianaIonita/serverless-api-gateway-caching/issues/63).
 
 ## Examples
 
