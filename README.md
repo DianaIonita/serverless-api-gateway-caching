@@ -1,46 +1,14 @@
 # serverless-api-gateway-caching
 
+![npm](https://img.shields.io/npm/v/serverless-api-gateway-caching.svg)
 [![CircleCI](https://circleci.com/gh/DianaIonita/serverless-api-gateway-caching.svg?style=svg)](https://circleci.com/gh/DianaIonita/serverless-api-gateway-caching)
 
 ## Intro
 A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.
 
-## Good to know
-* If you enable caching globally, it does NOT automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
+## Quick Start
+* If you enable caching globally, it does *NOT* automatically enable caching for your endpoints - you have to be explicit about which endpoints should have caching enabled.
 However, disabling caching globally disables it across endpoints.
-* If you don't specify `ttlInSeconds` and `perKeyInvalidation` for an endpoint which has caching enabled, these settings are inherited from global settings.
-* `clusterSize` configuration is only allowed as global setting in AWS, so this parameter must be configured in the global section and will be ignored if it is found in the endpoint configuration level. 
-* For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
-
-## Per-key cache invalidation
-If you don't configure per-key cache invalidation authorization, by default it is *required*.
-You can configure how to handle unauthorized requests to invalidate a cache key using the options:
-* `Ignore` - ignores the request to invalidate the cache key.
-* `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response.
-* `Fail` - fails the request to invalidate the cache key with a 403 response status code.
-
-## Cache key parameters
-You would define these for endpoints where the response varies according to one or more request parameters. API Gateway creates entries in the cache keyed based on them. Note that cache key parameters are case sensitive.
-Specifying where the request parameters can be found:
-- request.path.PARAM_NAME
-- request.querystring.PARAM_NAME
-- request.multivaluequerystring.PARAM_NAME
-- request.header.PARAM_NAME
-- request.multivalueheader.PARAM_NAME
-
-### Mapped cache key parameters
-In order to define cache key parameters based on `request.body` or `request.body.JSONPath_EXPRESSION`, you must set up a header mapping from the client method request to the integration request.
-
-For example, to cache POST requests by `request.body`, use the following configuration:
-```yaml
-cacheKeyParameters:
-  - name: integration.request.header.bodyCacheHeader
-    value: method.request.body
-```
-
-## Examples
-
-### Minimal setup
 
 ```yml
 plugins:
@@ -82,55 +50,19 @@ functions:
             cacheKeyParameters:
               - name: request.path.pawId
               - name: request.header.Accept-Language
-
-  # Responses are cached based on the 'breed' query string parameter and the 'Accept-Language' header
-  get-cats-by-breed:
-    handler: rest_api/cat/get/handler.handle
-    events:
-      - http:
-          path: /cats
-          method: get
-          caching:
-            enabled: true
-            cacheKeyParameters:
-              - name: request.querystring.breed
-              - name: request.header.Accept-Language
-
-  # Example setup for a graphql endpoint:
-  # - Cache responses for GET requests based on the 'query' query string parameter
-  # - Cache responses for POST requests based on request body
-  #   (note: you must use the lambda integration instead of the lambda proxy integration 
-  #    in order for this to work)
-  cats-graphql:
-    handler: graphql/handler.handle
-    events:
-      - http:
-          path: /graphql
-          method: get
-          caching:
-            enabled: true
-            cacheKeyParameters:
-              - name: request.querystring.query
-      - http:
-          path: /graphql
-          method: post
-          integration: lambda
-          caching:
-            enabled: true
-            cacheKeyParameters:
-              - name: integration.request.header.bodyCacheHeader
-                value: method.request.body
 ```
 
-### Configuring the cache cluster size and cache time to live
-Cache time to live, invalidation settings and data encryption are applied to all functions, unless specifically overridden.
+## Time-to-live, encryption, cache invalidation settings
+
+You can use the `apiGatewayCaching` section ("global settings") to quickly configure cache time-to-live, data encryption and per-key cache invalidation for all endpoints. The settings are inherited by each endpoint for which caching is enabled.
+
+Cache `clusterSize` can only be specified under global settings, because there's only one cluster per API Gateway stage.
 
 ```yml
 plugins:
   - serverless-api-gateway-caching
 
 custom:
-  # Enable or disable caching globally
   apiGatewayCaching:
     enabled: true
     clusterSize: '0.5' # defaults to '0.5'
@@ -138,23 +70,23 @@ custom:
     dataEncrypted: true # defaults to false
     perKeyInvalidation:
       requireAuthorization: true # default is true
-      handleUnauthorizedRequests: Ignore # default is "IgnoreWithWarning"
-
+      handleUnauthorizedRequests: Ignore # default is "IgnoreWithWarning".
 ```
 
-### Configuring per-function cache time to live, cache invalidation strategy, cache key parameters and cache data encryption
+### Configuring per-endpoint settings
+
+If you need a specific endpoint to override any of the global settings, you can add them like this:
 
 ```yml
 plugins:
   - serverless-api-gateway-caching
 
 custom:
-  # Enable or disable caching globally
   apiGatewayCaching:
     enabled: true
+    ttlInSeconds: 300
 
 functions:
-  # Responses are cached based on the 'pawId' path parameter and the 'Accept-Language' header
   get-cat-by-paw-id:
     handler: rest_api/cat/get/handler.handle
     events:
@@ -163,7 +95,7 @@ functions:
           method: get
           caching:
             enabled: true
-            ttlInSeconds: 3600
+            ttlInSeconds: 3600 # overrides the global setting for ttlInSeconds
             dataEncrypted: true # default is false
             perKeyInvalidation:
               requireAuthorization: true # default is true
@@ -173,25 +105,241 @@ functions:
               - name: request.header.Accept-Language
 ```
 
+## Good to know
+* For HTTP method `ANY`, caching will be enabled only for the `GET` method and disabled for the other methods.
 
-### Configuring a shared api gateway
-No modifications will be applied to the root caching configuration of the api gateway,  
-Cache time to live, invalidation settings and data encryption are applied to all functions, unless specifically overridden.
+## Per-key cache invalidation
+If you don't configure per-key cache invalidation authorization, by default it is *required*.
+You can configure how to handle unauthorized requests to invalidate a cache key using the options:
+* `Ignore` - ignores the request to invalidate the cache key.
+* `IgnoreWithWarning` - ignores the request to invalidate and adds a `warning` header in the response.
+* `Fail` - fails the request to invalidate the cache key with a 403 response status code.
+
+## Cache key parameters
+You would define these for endpoints where the response varies according to one or more request parameters. API Gateway creates entries in the cache keyed based on them.
+Please note that cache key parameters are *case sensitive*.
+
+### Quick overview of how cache entries are created
+Suppose the configuration looks like this:
 
 ```yml
 plugins:
   - serverless-api-gateway-caching
 
 custom:
-  # Enable or disable caching globally
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  get-cat-by-paw-id:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats/{pawId}
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.path.pawId
+              - name: request.querystring.catName
+```
+
+When the endpoint is hit, API Gateway will create cache entries based on the `pawId` path parameter and the `catName` query string parameter. For instance:
+- `GET /cats/4` will create a cache entry for `pawId=4` and `catName` as `undefined`.
+- `GET /cats/34?catName=Toby` will create a cache entry for `pawId=34` and `catName=Toby`.
+- `GET /cats/72?catName=Dixon&furColour=white` will create a cache entry for `pawId=72` and `catName=Dixon`, but will ignore the `furColour` query string parameter. That means that a subsequent request to `GET /cats/72?catName=Dixon&furColour=black` will return the cached response for `pawId=72` and `catName=Dixon`.
+
+### Cache key parameters from the path, query string and header
+When an endpoint varies its responses based on values found in the `path`, `query string` or `header`, you can specify all the parameter names as cache key parameters:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  get-cats:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats/{city}/{shelterId}/
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.path.city
+              - name: request.path.shelterId
+              - name: request.querystring.breed
+              - name: request.querystring.furColour
+              - name: request.header.Accept-Language
+```
+
+### Caching catch-all path parameters
+When you specify a catch-all route that intercepts all requests to the path and routes them to the same function, you can also configure the path as a cache key parameter.
+In this example: 
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  get-cats:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats/{proxy+}
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.path.proxy
+```
+API Gateway will create cache entries like this:
+- `GET /cats/davy/` will create a cache entry for `proxy=davy`
+- `GET /cats/london/battersea/pink` will create an entry for `proxy=london/battersea/pink`
+- `GET /cats/london/battersea/pink?type=animals` will only create an entry for `proxy=london/battersea/pink`, ignoring the query string.
+
+
+### Cache key parameters from the body
+When the cache key parameter is the entire request body, you must set up a mapping from the client method request to the integration request.
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  # Cache responses for POST requests based on the whole request body
+  cats-graphql:
+    handler: graphql/handler.handle
+    events:
+      - http:
+          path: /graphql
+          method: post
+          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: integration.request.header.bodyValue
+                mappedFrom: method.request.body
+```
+
+When the cache key parameter is part of the request body, you can define a JSONPath expression. The following example uses as cache key parameter the `cities[0].petCount` value from the request body:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  # Cache responses for POST requests based on the whole request body
+  cats-graphql:
+    handler: graphql/handler.handle
+    events:
+      - http:
+          path: /graphql
+          method: post
+          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: integration.request.header.petCount
+                mappedFrom: method.request.body.cities[0].petCount
+```
+
+### Limitations
+Cache key parameters coming from multi-value query strings and multi-value headers are currently not supported.
+
+## Configuring a shared API Gateway
+This just means that no changes are applied to the root caching configuration of the API Gateway, however `ttlInSeconds`, `dataEncryption` and `perKeyInvalidation` are still applied to all functions, unless specifically overridden.
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
   apiGatewayCaching:
     enabled: true
     apiGatewayIsShared: true
-    clusterSize: '0.5' # defaults to '0.5'
-    ttlInSeconds: 300 # defaults to the maximum allowed: 3600
-    dataEncrypted: true # defaults to false
+    clusterSize: '0.5'
+    ttlInSeconds: 300
+    dataEncrypted: true
     perKeyInvalidation:
-      requireAuthorization: true # default is true
-      handleUnauthorizedRequests: Ignore # default is "IgnoreWithWarning"
+      requireAuthorization: true
+      handleUnauthorizedRequests: Ignore
+```
 
+## More Examples
+
+A function with several endpoints:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  get-cat-by-pawId:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats/{pawId}
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.path.pawId
+              - name: request.querystring.includeAdopted
+              - name: request.header.Accept-Language
+      - http:
+          path: /cats
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.querystring.pawId
+              - name: request.querystring.includeAdopted
+              - name: request.header.Accept-Language
+```
+
+Cache key parameters found in the `body` and as `querystring`:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  list-cats:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats
+          method: post
+          integration: lambda # you must use lambda integration for this to work
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.querystring.catName
+              - name: integration.request.header.furColour
+                mappedFrom: method.request.body.furColour
 ```

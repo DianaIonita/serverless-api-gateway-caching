@@ -538,8 +538,8 @@ describe('Configuring path parameter caching', () => {
     let method, functionWithCachingName, getMethodCacheKeyParameters, postMethodCacheKeyParameters;
     before(() => {
       functionWithCachingName = 'cats-graphql';
-      getMethodCacheKeyParameters = [{ name: 'integration.request.header.querystringCacheHeader', value: 'method.request.querystring.query' }];
-      postMethodCacheKeyParameters = [{ name: 'integration.request.header.bodyCacheHeader', value: 'method.request.body' }];
+      getMethodCacheKeyParameters = [{ name: 'integration.request.header.querystringCacheHeader', mappedFrom: 'method.request.querystring.query' }];
+      postMethodCacheKeyParameters = [{ name: 'integration.request.header.bodyCacheHeader', mappedFrom: 'method.request.body' }];
 
       let functionWithCaching = given.a_serverless_function(functionWithCachingName)
         .withHttpEndpoint('get', '/graphql', { enabled: true, cacheKeyParameters: getMethodCacheKeyParameters })
@@ -561,13 +561,13 @@ describe('Configuring path parameter caching', () => {
       it('should configure appropriate cache key parameters as request parameters', () => {
         for (let parameter of getMethodCacheKeyParameters) {
           if (
-            parameter.value.includes('method.request.querystring') ||
-            parameter.value.includes('method.request.header') ||
-            parameter.value.includes('method.request.path')
+            parameter.mappedFrom.includes('method.request.querystring') ||
+            parameter.mappedFrom.includes('method.request.header') ||
+            parameter.mappedFrom.includes('method.request.path')
           ) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [parameter.value]: {}
+                [parameter.mappedFrom]: {}
               });
           }
         }
@@ -577,7 +577,7 @@ describe('Configuring path parameter caching', () => {
         for (let parameter of getMethodCacheKeyParameters) {
           expect(method.Properties.Integration.RequestParameters)
             .to.deep.include({
-              [parameter.name]: parameter.value
+              [parameter.name]: parameter.mappedFrom
             });
         }
       });
@@ -602,13 +602,13 @@ describe('Configuring path parameter caching', () => {
       it('should configure appropriate cache key parameters as request parameters', () => {
         for (let parameter of postMethodCacheKeyParameters) {
           if (
-            parameter.value.includes('method.request.querystring') ||
-            parameter.value.includes('method.request.header') ||
-            parameter.value.includes('method.request.path')
+            parameter.mappedFrom.includes('method.request.querystring') ||
+            parameter.mappedFrom.includes('method.request.header') ||
+            parameter.mappedFrom.includes('method.request.path')
           ) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [parameter.value]: {}
+                [parameter.mappedFrom]: {}
               });
           }
         }
@@ -618,7 +618,7 @@ describe('Configuring path parameter caching', () => {
         for (let parameter of postMethodCacheKeyParameters) {
           expect(method.Properties.Integration.RequestParameters)
             .to.deep.include({
-              [parameter.name]: parameter.value
+              [parameter.name]: parameter.mappedFrom
             });
         }
       });

@@ -50,7 +50,7 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     }
 
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
-      if (!cacheKeyParameter.value) {
+      if (!cacheKeyParameter.mappedFrom) {
         let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
         method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
 
@@ -60,16 +60,16 @@ const addPathParametersCacheConfig = (settings, serverless) => {
 
         method.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
       } else {
-        let existingValue = method.Properties.RequestParameters[cacheKeyParameter.value];
+        let existingValue = method.Properties.RequestParameters[cacheKeyParameter.mappedFrom];
         if (
-          cacheKeyParameter.value.includes('method.request.querystring') ||
-          cacheKeyParameter.value.includes('method.request.header') ||
-          cacheKeyParameter.value.includes('method.request.path')
+          cacheKeyParameter.mappedFrom.includes('method.request.querystring') ||
+          cacheKeyParameter.mappedFrom.includes('method.request.header') ||
+          cacheKeyParameter.mappedFrom.includes('method.request.path')
         ) {
-          method.Properties.RequestParameters[cacheKeyParameter.value] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
+          method.Properties.RequestParameters[cacheKeyParameter.mappedFrom] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
         }
         if (method.Properties.Integration.Type !== 'AWS_PROXY') {
-          method.Properties.Integration.RequestParameters[cacheKeyParameter.name] = cacheKeyParameter.value;
+          method.Properties.Integration.RequestParameters[cacheKeyParameter.name] = cacheKeyParameter.mappedFrom;
         }
         method.Properties.Integration.CacheKeyParameters.push(cacheKeyParameter.name)
       }
