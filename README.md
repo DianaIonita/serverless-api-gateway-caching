@@ -1,6 +1,6 @@
 # serverless-api-gateway-caching
 
-[![npm](https://img.shields.io/npm/v/serverless-api-gateway-caching.svg)][npmjs]
+![npm](https://img.shields.io/npm/v/serverless-api-gateway-caching.svg)
 [![CircleCI](https://circleci.com/gh/DianaIonita/serverless-api-gateway-caching.svg?style=svg)](https://circleci.com/gh/DianaIonita/serverless-api-gateway-caching)
 
 ## Intro
