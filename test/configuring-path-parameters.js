@@ -533,6 +533,108 @@ describe('Configuring path parameter caching', () => {
       });
     });
   }
+
+  describe('when there are methods with mapped cache key parameters', () => {
+    let method, functionWithCachingName, getMethodCacheKeyParameters, postMethodCacheKeyParameters;
+    before(() => {
+      functionWithCachingName = 'cats-graphql';
+      getMethodCacheKeyParameters = [{ name: 'integration.request.header.querystringCacheHeader', mappedFrom: 'method.request.querystring.query' }];
+      postMethodCacheKeyParameters = [{ name: 'integration.request.header.bodyCacheHeader', mappedFrom: 'method.request.body' }];
+
+      let functionWithCaching = given.a_serverless_function(functionWithCachingName)
+        .withHttpEndpoint('get', '/graphql', { enabled: true, cacheKeyParameters: getMethodCacheKeyParameters })
+        .withHttpEndpoint('post', '/graphql', { enabled: true, cacheKeyParameters: postMethodCacheKeyParameters });
+
+      serverless = given.a_serverless_instance(serviceName)
+        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .forStage(stage)
+        .withFunction(functionWithCaching);
+
+      when_configuring_path_parameters(serverless)
+    });
+
+    describe('on the GET method', () => {
+      before(() => {
+        method = serverless.getMethodResourceForMethodName("ApiGatewayMethodGraphqlGet");
+      });
+
+      it('should configure appropriate cache key parameters as request parameters', () => {
+        for (let parameter of getMethodCacheKeyParameters) {
+          if (
+            parameter.mappedFrom.includes('method.request.querystring') ||
+            parameter.mappedFrom.includes('method.request.header') ||
+            parameter.mappedFrom.includes('method.request.path')
+          ) {
+            expect(method.Properties.RequestParameters)
+              .to.deep.include({
+                [parameter.mappedFrom]: {}
+              });
+          }
+        }
+      });
+
+      it('should set integration request parameters', () => {
+        for (let parameter of getMethodCacheKeyParameters) {
+          expect(method.Properties.Integration.RequestParameters)
+            .to.deep.include({
+              [parameter.name]: parameter.mappedFrom
+            });
+        }
+      });
+
+      it('should set integration cache key parameters', () => {
+        for (let parameter of getMethodCacheKeyParameters) {
+          expect(method.Properties.Integration.CacheKeyParameters)
+            .to.include(parameter.name);
+        }
+      });
+
+      it('should set a cache namespace', () => {
+        expect(method.Properties.Integration.CacheNamespace).to.exist;
+      });
+    });
+
+    describe('on the POST method', () => {
+      before(() => {
+        method = serverless.getMethodResourceForMethodName("ApiGatewayMethodGraphqlPost");
+      });
+
+      it('should configure appropriate cache key parameters as request parameters', () => {
+        for (let parameter of postMethodCacheKeyParameters) {
+          if (
+            parameter.mappedFrom.includes('method.request.querystring') ||
+            parameter.mappedFrom.includes('method.request.header') ||
+            parameter.mappedFrom.includes('method.request.path')
+          ) {
+            expect(method.Properties.RequestParameters)
+              .to.deep.include({
+                [parameter.mappedFrom]: {}
+              });
+          }
+        }
+      });
+
+      it('should set integration request parameters', () => {
+        for (let parameter of postMethodCacheKeyParameters) {
+          expect(method.Properties.Integration.RequestParameters)
+            .to.deep.include({
+              [parameter.name]: parameter.mappedFrom
+            });
+        }
+      });
+
+      it('should set integration cache key parameters', () => {
+        for (let parameter of postMethodCacheKeyParameters) {
+          expect(method.Properties.Integration.CacheKeyParameters)
+            .to.include(parameter.name);
+        }
+      });
+
+      it('should set a cache namespace', () => {
+        expect(method.Properties.Integration.CacheNamespace).to.exist;
+      });
+    });
+  })
 });
 
 const when_configuring_path_parameters = (serverless) => {

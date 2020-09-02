@@ -207,14 +207,8 @@ API Gateway will create cache entries like this:
 - `GET /cats/london/battersea/pink?type=animals` will only create an entry for `proxy=london/battersea/pink`, ignoring the query string.
 
 
-### Cache key parameters from the body, multivaluequerystring and multivalueheader
-For parameters found elsewhere, for example:
-- `request.multivaluequerystring`
-- `request.multivalueheader`
-- `request.body`
-- `request.body.JSONPath_EXPRESSION`
-
-You can also define cache key parameters, but you must set up a mapping from the client method request to the integration request.
+### Cache key parameters from the body
+When the cache key parameter is the entire request body, you must set up a mapping from the client method request to the integration request.
 
 ```yml
 plugins:
@@ -225,7 +219,7 @@ custom:
     enabled: true
 
 functions:
-  # Cache responses for POST requests based on the request body
+  # Cache responses for POST requests based on the whole request body
   cats-graphql:
     handler: graphql/handler.handle
     events:
@@ -237,8 +231,37 @@ functions:
             enabled: true
             cacheKeyParameters:
               - name: integration.request.header.bodyValue
-                value: method.request.body
+                mappedFrom: method.request.body
 ```
+
+When the cache key parameter is part of the request body, you can define a JSONPath expression. The following example uses as cache key parameter the `cities[0].petCount` value from the request body:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  # Cache responses for POST requests based on the whole request body
+  cats-graphql:
+    handler: graphql/handler.handle
+    events:
+      - http:
+          path: /graphql
+          method: post
+          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: integration.request.header.petCount
+                mappedFrom: method.request.body.cities[0].petCount
+```
+
+### Limitations
+Cache key parameters coming from multi-value query strings and multi-value headers are currently not supported.
 
 ## Configuring a shared API Gateway
 This just means that no changes are applied to the root caching configuration of the API Gateway, however `ttlInSeconds`, `dataEncryption` and `perKeyInvalidation` are still applied to all functions, unless specifically overridden.
@@ -295,7 +318,7 @@ functions:
               - name: request.header.Accept-Language
 ```
 
-Caching with `multivaluequerystring` cache key parameters:
+Cache key parameters found in the `body` and as `querystring`:
 
 ```yml
 plugins:
@@ -311,11 +334,12 @@ functions:
     events:
       - http:
           path: /cats
-          method: get
+          method: post
           integration: lambda # you must use lambda integration for this to work
           caching:
             enabled: true
             cacheKeyParameters:
+              - name: request.querystring.catName
               - name: integration.request.header.furColour
-                value: method.request.multivaluequerystring.furColour
+                mappedFrom: method.request.body.furColour
 ```
