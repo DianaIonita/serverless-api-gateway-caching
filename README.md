@@ -202,9 +202,9 @@ functions:
               - name: request.path.proxy
 ```
 API Gateway will create cache entries like this:
-- `GET /cats/davy/` will create a cache entry for `proxy=davy`
-- `GET /cats/london/battersea/pink` will create an entry for `proxy=london/battersea/pink`
-- `GET /cats/london/battersea/pink?type=animals` will only create an entry for `proxy=london/battersea/pink`, ignoring the query string.
+- `GET /cats/toby/` will create a cache entry for `proxy=toby`
+- `GET /cats/in/london` will create an entry for `proxy=in/london`
+- `GET /cats/in/london?named=toby` will only create an entry for `proxy=in/london`, ignoring the query string. Note, however, that you can also add the `named` query string parameter as a cache key parameter and it will cache based on that value as well.
 
 
 ### Cache key parameters from the body

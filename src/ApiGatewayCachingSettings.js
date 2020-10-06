@@ -54,6 +54,10 @@ class ApiGatewayEndpointCachingSettings {
       this.method = event.http.method;
     }
 
+    if (this.path.endsWith('/') && this.path.length > 1) {
+      this.path = this.path.slice(0, -1);
+    }
+
     if (!event.http.caching) {
       this.cachingEnabled = false;
       return;
