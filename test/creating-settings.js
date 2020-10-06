@@ -537,6 +537,39 @@ describe('Creating settings', () => {
       });
     });
   });
+
+  // API Gateway's updateStage doesn't like paths which end in forward slash
+  describe('when a http endpoint path ends with a forward slash character and caching is turned on globally', () => {
+    before(() => {
+      endpoint = given.a_serverless_function('list-cats')
+        .withHttpEndpoint('get', '/cat/');
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true)
+        .withFunction(endpoint);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('settings should contain the endpoint path without the forward slash at the end', () => {
+      expect(cacheSettings.endpointSettings[0].path).to.equal('/cat');
+    });
+  });
+
+  describe('when a http endpoint path is a forward slash character and caching is turned on globally', () => {
+    before(() => {
+      endpoint = given.a_serverless_function('list-cats')
+        .withHttpEndpoint('get', '/');
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig(true)
+        .withFunction(endpoint);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('settings should contain the endpoint path as is', () => {
+      expect(cacheSettings.endpointSettings[0].path).to.equal('/');
+    });
+  });
 });
 
 const createSettingsFor = (serverless, options) => {
