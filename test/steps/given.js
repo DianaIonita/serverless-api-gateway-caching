@@ -32,10 +32,19 @@ const endpoints_with_caching_enabled = (endpointCount) => {
   return result;
 }
 
+const an_additional_endpoint = ({ method, path, caching }) => {
+  return {
+    method,
+    path,
+    caching
+  }
+}
+
 module.exports = {
   a_serverless_instance,
   a_serverless_function,
   a_rest_api_id,
   a_rest_api_id_for_deployment,
-  endpoints_with_caching_enabled
+  endpoints_with_caching_enabled,
+  an_additional_endpoint
 }

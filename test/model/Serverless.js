@@ -65,6 +65,11 @@ class Serverless {
     return this;
   }
 
+  withAdditionalEndpoints(additionalEndpoints){
+    this.service.custom.apiGatewayCaching.additionalEndpoints = additionalEndpoints;
+    return this;
+  }
+
   withPredefinedRestApiId(restApiId) {
     if (!this.service.provider.apiGateway) {
       this.service.provider.apiGateway = {}
@@ -95,20 +100,19 @@ class Serverless {
         },
         request: async (awsService, method, properties, stage, region) => {
           this._recordedAwsRequests.push({ awsService, method, properties, stage, region });
+
           if (awsService == 'CloudFormation'
             && method == 'describeStacks'
             && properties.StackName == 'serverless-stack-name'
             && stage == settings.stage
             && region == settings.region) {
             return {
-              Stacks: [
-                {
-                  Outputs: [{
-                    OutputKey: 'RestApiIdForApigCaching',
-                    OutputValue: restApiId
-                  }]
-                }
-              ]
+              Stacks: [{
+                Outputs: [{
+                  OutputKey: 'RestApiIdForApigCaching',
+                  OutputValue: restApiId
+                }]
+              }]
             };
           }
         }

@@ -40,8 +40,7 @@ class PerKeyInvalidationSettings {
 }
 
 class ApiGatewayEndpointCachingSettings {
-  constructor(customFunctionName, functionName, event, globalSettings) {
-    this.customFunctionName = customFunctionName;
+  constructor(functionName, event, globalSettings) {
     this.functionName = functionName;
 
     if (typeof (event.http) === 'string') {
@@ -76,13 +75,23 @@ class ApiGatewayEndpointCachingSettings {
   }
 }
 
+class ApiGatewayAdditionalEndpointCachingSettings {
+  constructor(method, path, caching, globalSettings) {
+    this.method = method;
+    this.path = path;
+    this.cachingEnabled = globalSettings.cachingEnabled ? caching.enabled : false;
+    this.cacheTtlInSeconds = caching.ttlInSeconds || globalSettings.cacheTtlInSeconds;
+  }
+}
+
 class ApiGatewayCachingSettings {
   constructor(serverless, options) {
     if (!get(serverless, 'service.custom.apiGatewayCaching')) {
       return;
     }
-    this.cachingEnabled = serverless.service.custom.apiGatewayCaching.enabled;
-    this.apiGatewayIsShared = serverless.service.custom.apiGatewayCaching.apiGatewayIsShared;
+    const cachingSettings = serverless.service.custom.apiGatewayCaching;
+    this.cachingEnabled = cachingSettings.enabled;
+    this.apiGatewayIsShared = cachingSettings.apiGatewayIsShared;
 
     if (options) {
       this.stage = options.stage || serverless.service.provider.stage;
@@ -93,18 +102,26 @@ class ApiGatewayCachingSettings {
     }
 
     this.endpointSettings = [];
+    this.additionalEndpointSettings = [];
 
-    this.cacheClusterSize = serverless.service.custom.apiGatewayCaching.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
-    this.cacheTtlInSeconds = serverless.service.custom.apiGatewayCaching.ttlInSeconds || DEFAULT_TTL;
-    this.dataEncrypted = serverless.service.custom.apiGatewayCaching.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
+    this.cacheClusterSize = cachingSettings.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
+    this.cacheTtlInSeconds = cachingSettings.ttlInSeconds || DEFAULT_TTL;
+    this.dataEncrypted = cachingSettings.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
 
-    this.perKeyInvalidation = new PerKeyInvalidationSettings(serverless.service.custom.apiGatewayCaching);
+    const additionalEndpoints = cachingSettings.additionalEndpoints || [];
+    for (let additionalEndpoint of additionalEndpoints) {
+      const { method, path, caching } = additionalEndpoint;
+
+      this.additionalEndpointSettings.push(new ApiGatewayAdditionalEndpointCachingSettings(method, path, caching, this))
+    }
+
+    this.perKeyInvalidation = new PerKeyInvalidationSettings(cachingSettings);
 
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];
       for (let event in functionSettings.events) {
         if (isApiGatewayEndpoint(functionSettings.events[event])) {
-          this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionSettings.name, functionName, functionSettings.events[event], this))
+          this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionName, functionSettings.events[event], this))
         }
       }
     }

@@ -454,6 +454,57 @@ describe('Creating settings', () => {
     });
   });
 
+  describe('when there are additional endpoints defined', () => {
+    describe('and caching is turned off globally', () => {
+      before(() => {
+        serverless = given.a_serverless_instance()
+          .withApiGatewayCachingConfig(false)
+          .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching: { enabled: true } }]);
+
+        cacheSettings = createSettingsFor(serverless);
+      });
+
+      it('caching should be disabled for the additional endpoints', () => {
+        expect(cacheSettings.additionalEndpointSettings[0].cachingEnabled).to.be.false;
+      });
+    });
+
+    describe('and caching is turned on globally', () => {
+      before(() => {
+        serverless = given.a_serverless_instance()
+          .withApiGatewayCachingConfig(true, '1', 20);
+      });
+
+      describe('and only the fact that caching is enabled is specified on the additional endpoint', () => {
+        before(() => {
+          let caching = { enabled: true }
+          serverless = serverless
+            .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching }]);
+
+          cacheSettings = createSettingsFor(serverless);
+        });
+
+        it('should inherit time to live settings from global settings', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(20);
+        });
+      });
+
+      describe('and the time to live is specified', () => {
+        before(() => {
+          let caching = { enabled: true, ttlInSeconds: 67 }
+          serverless = serverless
+            .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching }]);
+
+          cacheSettings = createSettingsFor(serverless);
+        });
+
+        it('should set the correct time to live', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(67);
+        });
+      });
+    });
+  });
+
   describe('when there are command line options for the deployment', () => {
     let options;
     before(() => {
