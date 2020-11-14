@@ -15,6 +15,8 @@ class ApiGatewayCachingPlugin {
       'before:package:finalize': this.updateCloudFormationTemplate.bind(this),
       'after:aws:deploy:finalize:cleanup': this.updateStage.bind(this),
     };
+
+    this.defineValidationSchema(serverless);
   }
 
   createSettings() {
@@ -50,6 +52,78 @@ class ApiGatewayCachingPlugin {
     }
 
     return updateStageCacheSettings(this.settings, this.serverless);
+  }
+
+  defineValidationSchema() {
+    if (!this.serverless.configSchemaHandler
+      || !this.serverless.configSchemaHandler.defineCustomProperties
+      || !this.serverless.configSchemaHandler.defineFunctionEventProperties) {
+      return;
+    }
+
+    const customSchema = this.customCachingSchema();
+    this.serverless.configSchemaHandler.defineCustomProperties(customSchema);
+
+    const httpSchema = this.httpEventCachingSchema();
+    this.serverless.configSchemaHandler.defineFunctionEventProperties('aws', 'http', httpSchema);
+  }
+
+  httpEventCachingSchema() {
+    return {
+      type: 'object',
+      properties: {
+        caching: {
+          properties: {
+            enabled: { type: 'boolean' },
+            ttlInSeconds: { type: 'number' },
+            dataEncrypted: { type: 'boolean' },
+            perKeyInvalidation: {
+              properties: {
+                requireAuthorization: { type: 'boolean' },
+                handleUnauthorizedRequests: {
+                  type: 'string',
+                  enum: ['Ignore', 'IgnoreWithWarning', 'Fail']
+                }
+              }
+            },
+            cacheKeyParameters: {
+              type: 'array',
+              items: {
+                properties: {
+                  name: { type: 'string' },
+                  value: { type: 'string' }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+
+  customCachingSchema() {
+    return {
+      type: 'object',
+      properties: {
+        apiGatewayCaching: {
+          properties: {
+            enabled: { type: 'boolean' },
+            clusterSize: { type: 'string' },
+            ttlInSeconds: { type: 'number' },
+            dataEncrypted: { type: 'boolean' },
+            perKeyInvalidation: {
+              properties: {
+                requireAuthorization: { type: 'boolean' },
+                handleUnauthorizedRequests: {
+                  type: 'string',
+                  enum: ['Ignore', 'IgnoreWithWarning', 'Fail']
+                }
+              }
+            }
+          }
+        }
+      }
+    }
   }
 }
 
