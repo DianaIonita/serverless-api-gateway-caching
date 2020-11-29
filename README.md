@@ -336,8 +336,6 @@ custom:
           dataEncrypted: true # if not set, inherited from global settings
 ```
 
-
-
 ## More Examples
 
 A function with several endpoints:
