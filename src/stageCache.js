@@ -40,7 +40,7 @@ const createPatchForStage = (settings) => {
     patch.push({
       op: 'replace',
       path: '/*/*/caching/dataEncrypted',
-      value: `${settings.dataEncrypted}`    
+      value: `${settings.dataEncrypted}`
     });
 
     patch.push({
@@ -49,7 +49,7 @@ const createPatchForStage = (settings) => {
       value: `${settings.cacheTtlInSeconds}`
     });
   }
-  
+
   return patch;
 }
 
@@ -183,7 +183,8 @@ const updateStageCacheSettings = async (settings, serverless) => {
 
   let patchOps = createPatchForStage(settings);
 
-  let endpointsWithCachingEnabled = settings.endpointSettings.filter(e => e.cachingEnabled);
+  let endpointsWithCachingEnabled = settings.endpointSettings.filter(e => e.cachingEnabled)
+    .concat(settings.additionalEndpointSettings.filter(e => e.cachingEnabled));
   if (settings.cachingEnabled && isEmpty(endpointsWithCachingEnabled)) {
     serverless.cli.log(`[serverless-api-gateway-caching] [WARNING] API Gateway caching is enabled but none of the endpoints have caching enabled`);
   }
@@ -192,6 +193,13 @@ const updateStageCacheSettings = async (settings, serverless) => {
     let endpointPatch = createPatchForEndpoint(endpointSettings, serverless);
     patchOps = patchOps.concat(endpointPatch);
   }
+
+  // TODO handle 'ANY' method, if possible
+  for (let additionalEndpointSettings of settings.additionalEndpointSettings) {
+    let endpointPatch = patchForMethod(additionalEndpointSettings.path, additionalEndpointSettings.method, additionalEndpointSettings);
+    patchOps = patchOps.concat(endpointPatch);
+  }
+
   let params = {
     restApiId,
     stageName: settings.stage,

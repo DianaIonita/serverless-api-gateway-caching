@@ -119,6 +119,22 @@ class ApiGatewayCachingPlugin {
                   enum: ['Ignore', 'IgnoreWithWarning', 'Fail']
                 }
               }
+            },
+            additionalEndpoints: {
+              type: 'array',
+              items: {
+                properties: {
+                  method: { type: 'string' },
+                  path: { type: 'string' },
+                  caching: {
+                    properties: {
+                      enabled: { type: 'boolean' },
+                      ttlInSeconds: { type: 'number' },
+                      dataEncrypted: { type: 'boolean' },
+                    }
+                  }
+                }
+              }
             }
           }
         }
