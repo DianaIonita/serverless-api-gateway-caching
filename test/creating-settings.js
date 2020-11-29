@@ -475,9 +475,22 @@ describe('Creating settings', () => {
           .withApiGatewayCachingConfig(true, '1', 20);
       });
 
+      describe('and no caching settings are defined for the additional endpoint', () => {
+        before(() => {
+          serverless = serverless
+            .withAdditionalEndpoints([{ method: 'GET', path: '/shelter' }]);
+
+          cacheSettings = createSettingsFor(serverless);
+        });
+
+        it('should disable caching for the endpoint', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].cachingEnabled).to.equal(false);
+        });
+      });
+
       describe('and only the fact that caching is enabled is specified on the additional endpoint', () => {
         before(() => {
-          let caching = { enabled: true }
+          let caching = { enabled: true };
           serverless = serverless
             .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching }]);
 
@@ -486,6 +499,10 @@ describe('Creating settings', () => {
 
         it('should inherit time to live settings from global settings', () => {
           expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(20);
+        });
+
+        it('should inherit data encryption settings from global settings', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].dataEncrypted).to.equal(false);
         });
       });
 
@@ -500,6 +517,28 @@ describe('Creating settings', () => {
 
         it('should set the correct time to live', () => {
           expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(67);
+        });
+
+        it('should inherit data encryption settings from global settings', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].dataEncrypted).to.equal(false);
+        });
+      });
+
+      describe('and data encryption is specified', () => {
+        before(() => {
+          let caching = { enabled: true, dataEncrypted: true }
+          serverless = serverless
+            .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching }]);
+
+          cacheSettings = createSettingsFor(serverless);
+        });
+
+        it('should set the correct data encryption', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].dataEncrypted).to.equal(true);
+        });
+
+        it('should inherit time to live settings from global settings', () => {
+          expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(20);
         });
       });
     });

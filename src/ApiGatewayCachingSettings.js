@@ -79,8 +79,9 @@ class ApiGatewayAdditionalEndpointCachingSettings {
   constructor(method, path, caching, globalSettings) {
     this.method = method;
     this.path = path;
-    this.cachingEnabled = globalSettings.cachingEnabled ? caching.enabled : false;
-    this.cacheTtlInSeconds = caching.ttlInSeconds || globalSettings.cacheTtlInSeconds;
+    this.cachingEnabled = globalSettings.cachingEnabled ? get(caching, 'enabled', false) : false;
+    this.cacheTtlInSeconds = get(caching, 'ttlInSeconds', globalSettings.cacheTtlInSeconds);
+    this.dataEncrypted = get(caching, 'dataEncrypted', globalSettings.dataEncrypted);
   }
 }
 

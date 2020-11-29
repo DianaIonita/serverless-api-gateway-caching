@@ -77,7 +77,7 @@ describe('Updating stage cache settings', () => {
     });
   });
 
-  describe('When api gateway caching is true but api gateway is shared', () => {
+  describe('When api gateway caching is enabled and the api gateway is shared', () => {
     let restApiId;
 
     describe('and there are no endpoints for which to enable caching', () => {
