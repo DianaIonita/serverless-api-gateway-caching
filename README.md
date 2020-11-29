@@ -1,7 +1,8 @@
 # serverless-api-gateway-caching
 
-![npm](https://img.shields.io/npm/v/serverless-api-gateway-caching.svg)
 [![CircleCI](https://circleci.com/gh/DianaIonita/serverless-api-gateway-caching.svg?style=svg)](https://circleci.com/gh/DianaIonita/serverless-api-gateway-caching)
+![npm](https://img.shields.io/npm/v/serverless-api-gateway-caching.svg)
+[![npm downloads](https://img.shields.io/npm/dt/serverless-api-gateway-caching.svg?style=svg)](https://www.npmjs.com/package/serverless-api-gateway-caching)
 
 ## Intro
 A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.
