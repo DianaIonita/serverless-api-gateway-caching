@@ -282,6 +282,60 @@ custom:
       handleUnauthorizedRequests: Ignore
 ```
 
+## Configuring caching settings for endpoints defined in CloudFormation
+You can use this feature to configure caching for endpoints which are defined in CloudFormation and not as serverless functions.
+If your `serverless.yml` contains, for example, a [HTTP Proxy](https://www.serverless.com/framework/docs/providers/aws/events/apigateway/#setting-an-http-proxy-on-api-gateway) like this:
+
+```yml
+resources:
+  Resources:
+    ProxyResource:
+      Type: AWS::ApiGateway::Resource
+      Properties:
+        ParentId:
+          Fn::GetAtt:
+            - ApiGatewayRestApi # the default Rest API logical ID
+            - RootResourceId
+        PathPart: serverless # the endpoint in your API that is set as proxy
+        RestApiId:
+          Ref: ApiGatewayRestApi
+    ProxyMethod:
+      Type: AWS::ApiGateway::Method
+      Properties:
+        ResourceId:
+          Ref: ProxyResource
+        RestApiId:
+          Ref: ApiGatewayRestApi
+        HttpMethod: GET
+        AuthorizationType: NONE
+        MethodResponses:
+          - StatusCode: 200
+        Integration:
+          IntegrationHttpMethod: POST
+          Type: HTTP
+          Uri: http://serverless.com # the URL you want to set a proxy to
+          IntegrationResponses:
+            - StatusCode: 200
+```
+
+Then you can configure caching for it like this:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+    additionalEndpoints:
+      - method: GET
+        path: /serverless
+        caching:
+          enabled: true # it must be specifically enabled
+          ttlInSeconds: 1200 # if not set, inherited from global settings
+          dataEncrypted: true # if not set, inherited from global settings
+```
+
 ## More Examples
 
 A function with several endpoints:

@@ -77,7 +77,7 @@ describe('Updating stage cache settings', () => {
     });
   });
 
-  describe('When api gateway caching is true but api gateway is shared', () => {
+  describe('When api gateway caching is enabled and the api gateway is shared', () => {
     let restApiId;
 
     describe('and there are no endpoints for which to enable caching', () => {
@@ -123,7 +123,7 @@ describe('Updating stage cache settings', () => {
       });
 
       describe('the request sent to AWS SDK to update stage', () => {
-        const noOperationAreExpectedForPath = (path) => () => {
+        const noOperationsAreExpectedForPath = (path) => () => {
           const foundItems = apiGatewayRequest.properties.patchOperations.filter((item => item.path === path))
           expect(foundItems.length).to.equal(0);
         }
@@ -140,10 +140,10 @@ describe('Updating stage cache settings', () => {
           expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
         });
 
-        it('should leave caching untouched', noOperationAreExpectedForPath ('/cacheClusterEnabled'));
+        it('should leave caching untouched', noOperationsAreExpectedForPath('/cacheClusterEnabled'));
 
-        it('should leave the cache cluster size untouched', noOperationAreExpectedForPath ('/cacheClusterSize'));
-        
+        it('should leave the cache cluster size untouched', noOperationsAreExpectedForPath('/cacheClusterSize'));
+
         describe('for the endpoint with caching enabled', () => {
           it('should enable caching', () => {
             expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
