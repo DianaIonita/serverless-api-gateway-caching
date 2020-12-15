@@ -106,7 +106,7 @@ class ApiGatewayCachingSettings {
     this.additionalEndpointSettings = [];
 
     this.cacheClusterSize = cachingSettings.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
-    this.cacheTtlInSeconds = cachingSettings.ttlInSeconds || DEFAULT_TTL;
+    this.cacheTtlInSeconds = cachingSettings.ttlInSeconds >= 0 ? cachingSettings.ttlInSeconds: DEFAULT_TTL;
     this.dataEncrypted = cachingSettings.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
 
     const additionalEndpoints = cachingSettings.additionalEndpoints || [];
