@@ -12,10 +12,16 @@ const restApiExists = (serverless) => {
   if (configuredRestApiId) {
     return true;
   }
-  const resource = serverless.service.provider.compiledCloudFormationTemplate.Resources['ApiGatewayRestApi'];
+  let resource = serverless.service.provider.compiledCloudFormationTemplate.Resources['ApiGatewayRestApi'];
   if (resource) {
     return true;
   }
+
+  resource = serverless.service.provider.compiledCloudFormationTemplate.Resources['APINestedStack'];
+  if (resource) {
+    return true;
+  }
+
   return false;
 }
 
