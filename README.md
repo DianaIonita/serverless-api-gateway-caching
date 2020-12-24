@@ -337,6 +337,18 @@ custom:
           dataEncrypted: true # if not set, inherited from global settings
 ```
 
+## serverless-plugin-split-stacks support
+If you want to use [serverless-plugin-split-stacks plugin](https://github.com/dougmoscrop/serverless-plugin-split-stacks)
+you need to set in the stacks-map.js file:
+
+```js
+if (resource.Type.includes('AWS::ApiGateway::RestApi')) {
+            return false;
+}
+```
+
+Alternatively, there is a support for the default API nested stack name (So not setting anything should work) 
+
 ## More Examples
 
 A function with several endpoints:
