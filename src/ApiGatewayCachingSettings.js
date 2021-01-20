@@ -64,7 +64,7 @@ class ApiGatewayEndpointCachingSettings {
     let cachingConfig = event.http.caching;
     this.cachingEnabled = globalSettings.cachingEnabled ? cachingConfig.enabled : false;
     this.dataEncrypted = cachingConfig.dataEncrypted || globalSettings.dataEncrypted;
-    this.cacheTtlInSeconds = cachingConfig.ttlInSeconds || globalSettings.cacheTtlInSeconds;
+    this.cacheTtlInSeconds = cachingConfig.ttlInSeconds >= 0 ? cachingConfig.ttlInSeconds : globalSettings.cacheTtlInSeconds;
     this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
 
     if (!cachingConfig.perKeyInvalidation) {
@@ -80,7 +80,7 @@ class ApiGatewayAdditionalEndpointCachingSettings {
     this.method = method;
     this.path = path;
     this.cachingEnabled = globalSettings.cachingEnabled ? get(caching, 'enabled', false) : false;
-    this.cacheTtlInSeconds = get(caching, 'ttlInSeconds', globalSettings.cacheTtlInSeconds);
+    this.cacheTtlInSeconds = get(caching, 'ttlInSeconds', undefined) >= 0 ? caching.ttlInSeconds : globalSettings.cacheTtlInSeconds;
     this.dataEncrypted = get(caching, 'dataEncrypted', globalSettings.dataEncrypted);
   }
 }
@@ -106,7 +106,7 @@ class ApiGatewayCachingSettings {
     this.additionalEndpointSettings = [];
 
     this.cacheClusterSize = cachingSettings.clusterSize || DEFAULT_CACHE_CLUSTER_SIZE;
-    this.cacheTtlInSeconds = cachingSettings.ttlInSeconds || DEFAULT_TTL;
+    this.cacheTtlInSeconds = cachingSettings.ttlInSeconds >= 0 ? cachingSettings.ttlInSeconds : DEFAULT_TTL;
     this.dataEncrypted = cachingSettings.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
 
     const additionalEndpoints = cachingSettings.additionalEndpoints || [];
