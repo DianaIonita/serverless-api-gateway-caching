@@ -23,7 +23,7 @@ describe('Updating stage cache settings for additional endpoints defined as Clou
           })];
 
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 60)
+          .withApiGatewayCachingConfig()
           .withAdditionalEndpoints(additionalEndpoints)
           .forStage('somestage');
         settings = new ApiGatewayCachingSettings(serverless);
@@ -80,7 +80,7 @@ describe('Updating stage cache settings for additional endpoints defined as Clou
           expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
             op: 'replace',
             path: '/*/*/caching/ttlInSeconds',
-            value: '60'
+            value: '45'
           });
         });
       });

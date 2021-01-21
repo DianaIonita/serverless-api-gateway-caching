@@ -11,7 +11,7 @@ describe('Configuring path parameter caching', () => {
   describe('when there are no endpoints', () => {
     before(() => {
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage);
     });
 
@@ -28,7 +28,7 @@ describe('Configuring path parameter caching', () => {
       let endpoint = given.a_serverless_function('get-cat-by-paw-id')
         .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true });
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(endpoint);
     });
@@ -52,7 +52,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, cacheKeyParameters }, withLambdaIntegration);
 
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(functionWithCaching);
 
@@ -105,7 +105,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, cacheKeyParameters });
 
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(functionWithCaching)
         .withFunction(functionWithoutCaching);
@@ -186,7 +186,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('get', '/cat/{paw_id}', { enabled: true, cacheKeyParameters });
 
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(functionWithCaching)
         .withFunction(functionWithoutCaching);
@@ -240,7 +240,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, cacheKeyParameters });
 
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(functionWithCaching);
     });
@@ -291,7 +291,7 @@ describe('Configuring path parameter caching', () => {
           .withHttpEndpoint('get', '/paw/{catPawId}', { enabled: true, cacheKeyParameters: secondEndpointCacheKeyParameters });
 
         serverless = given.a_serverless_instance(serviceName)
-          .withApiGatewayCachingConfig(true, '0.5', 45)
+          .withApiGatewayCachingConfig()
           .forStage(stage)
           .withFunction(firstFunctionWithCaching)
           .withFunction(secondFunctionWithCaching);
@@ -383,7 +383,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('get', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: firstEndpointCacheKeyParameters })
         .withHttpEndpoint('delete', '/cat/paw/{pawId}', { enabled: true, cacheKeyParameters: secondEndpointCacheKeyParameters });
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(firstFunctionWithCaching)
 
@@ -490,7 +490,7 @@ describe('Configuring path parameter caching', () => {
           .withHttpEndpoint('get', httpEndpointPath, { enabled: true, cacheKeyParameters });
 
         serverless = given.a_serverless_instance(serviceName)
-          .withApiGatewayCachingConfig(true, '0.5', 45)
+          .withApiGatewayCachingConfig()
           .forStage(stage)
           .withFunction(functionWithCaching);
 
@@ -546,7 +546,7 @@ describe('Configuring path parameter caching', () => {
         .withHttpEndpoint('post', '/graphql', { enabled: true, cacheKeyParameters: postMethodCacheKeyParameters });
 
       serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig(true, '0.5', 45)
+        .withApiGatewayCachingConfig()
         .forStage(stage)
         .withFunction(functionWithCaching);
 

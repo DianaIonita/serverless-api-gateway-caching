@@ -28,7 +28,7 @@ describe('Creating settings', () => {
   describe('when the cluster size is omitted from Api Gateway caching settings', () => {
     before(() => {
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true);
+        .withApiGatewayCachingConfig({ clusterSize: null });
 
       cacheSettings = createSettingsFor(serverless);
     });
@@ -41,7 +41,8 @@ describe('Creating settings', () => {
   describe('when the time to live is omitted from Api Gateway caching settings', () => {
     before(() => {
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true);
+        .withApiGatewayCachingConfig();
+      serverless.service.custom.apiGatewayCaching.ttlInSeconds = undefined;
 
       cacheSettings = createSettingsFor(serverless);
     });
@@ -54,7 +55,7 @@ describe('Creating settings', () => {
   describe('when per-key invalidation settings are omitted from Api Gateway caching settings', () => {
     before(() => {
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true);
+        .withApiGatewayCachingConfig();
 
       cacheSettings = createSettingsFor(serverless);
     });
@@ -74,8 +75,7 @@ describe('Creating settings', () => {
       {
         description: 'and per key cache invalidation does not require authorization',
         serverless: given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 45,
-            { requireAuthorization: false }),
+          .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: false } }),
         expectedCacheSettings: {
           cachingEnabled: true,
           cacheClusterSize: '0.5',
@@ -88,8 +88,7 @@ describe('Creating settings', () => {
       {
         description: 'and the strategy to handle unauthorized invalidation requests is to ignore',
         serverless: given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 45,
-            { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' }),
+          .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' } }),
         expectedCacheSettings: {
           cachingEnabled: true,
           cacheClusterSize: '0.5',
@@ -103,8 +102,7 @@ describe('Creating settings', () => {
       {
         description: 'and the strategy to handle unauthorized invalidation requests is to ignore with a warning',
         serverless: given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 45,
-            { requireAuthorization: true, handleUnauthorizedRequests: 'IgnoreWithWarning' }),
+          .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'IgnoreWithWarning' } }),
         expectedCacheSettings: {
           cachingEnabled: true,
           cacheClusterSize: '0.5',
@@ -118,8 +116,7 @@ describe('Creating settings', () => {
       {
         description: 'and the strategy to handle unauthorized invalidation requests is to ignore with a warning',
         serverless: given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 45,
-            { requireAuthorization: true, handleUnauthorizedRequests: 'IgnoreWithWarning' }),
+          .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'IgnoreWithWarning' } }),
         expectedCacheSettings: {
           cachingEnabled: true,
           cacheClusterSize: '0.5',
@@ -133,8 +130,7 @@ describe('Creating settings', () => {
       {
         description: 'and the strategy to handle unauthorized invalidation requests is to fail the request',
         serverless: given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 45,
-            { requireAuthorization: true, handleUnauthorizedRequests: 'Fail' }),
+          .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'Fail' } }),
         expectedCacheSettings: {
           cachingEnabled: true,
           cacheClusterSize: '0.5',
@@ -148,11 +144,10 @@ describe('Creating settings', () => {
       {
         description: 'and the strategy to handle unauthorized invalidation requests is not set',
         serverless: given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '1', 45,
-            { requireAuthorization: true }),
+          .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: true } }),
         expectedCacheSettings: {
           cachingEnabled: true,
-          cacheClusterSize: '1',
+          cacheClusterSize: '0.5',
           cacheTtlInSeconds: 45,
           perKeyInvalidation: {
             requireAuthorization: true,
@@ -166,8 +161,7 @@ describe('Creating settings', () => {
       describe(scenario.description, () => {
         before(() => {
           serverless = given.a_serverless_instance()
-            .withApiGatewayCachingConfig(true, '0.5', 45,
-              { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' });
+            .withApiGatewayCachingConfig({ perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' } });
 
           cacheSettings = createSettingsFor(scenario.serverless);
         });
@@ -192,19 +186,11 @@ describe('Creating settings', () => {
   });
 
   describe('when there are settings defined for Api Gateway caching', () => {
-    before(() => {
-      serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true, '0.5', 45,
-          { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' });
-
-      cacheSettings = createSettingsFor(serverless);
-    });
-
     describe('and there are functions', () => {
       describe('and none of them are http endpoints', () => {
         before(() => {
           serverless = given.a_serverless_instance()
-            .withApiGatewayCachingConfig(true, '0.5', 45)
+            .withApiGatewayCachingConfig()
             .withFunction(given.a_serverless_function('schedule-cat-nap'))
             .withFunction(given.a_serverless_function('take-cat-to-vet'));
 
@@ -231,7 +217,7 @@ describe('Creating settings', () => {
             .withHttpEndpoint('get', '/cat/{pawId}', getMyCatCaching);
 
           serverless = given.a_serverless_instance()
-            .withApiGatewayCachingConfig(true, '0.5', 45)
+            .withApiGatewayCachingConfig()
             .withFunction(given.a_serverless_function('schedule-cat-nap'))
             .withFunction(listCats)
             .withFunction(getCatByPawId)
@@ -288,7 +274,7 @@ describe('Creating settings', () => {
         endpoint = given.a_serverless_function(getCatByPawIdFunctionName)
           .withHttpEndpoint('get', '/cat/{pawId}', caching);
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(false)
+          .withApiGatewayCachingConfig({ cachingEnabled: false })
           .withFunction(endpoint);
 
         cacheSettings = createSettingsFor(serverless);
@@ -302,8 +288,7 @@ describe('Creating settings', () => {
     describe('and caching is turned on globally', () => {
       before(() => {
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '1', 20,
-            { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' });
+          .withApiGatewayCachingConfig({ clusterSize: '1', ttlInSeconds: 20, perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' } });
       });
 
       describe('and only the fact that caching is enabled is specified', () => {
@@ -458,7 +443,7 @@ describe('Creating settings', () => {
     describe('and caching is turned off globally', () => {
       before(() => {
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(false)
+          .withApiGatewayCachingConfig({ cachingEnabled: false })
           .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching: { enabled: true } }]);
 
         cacheSettings = createSettingsFor(serverless);
@@ -472,7 +457,7 @@ describe('Creating settings', () => {
     describe('and caching is turned on globally', () => {
       before(() => {
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '1', 20);
+          .withApiGatewayCachingConfig({ clusterSize: '1', ttlInSeconds: 20 });
       });
 
       describe('and no caching settings are defined for the additional endpoint', () => {
@@ -550,7 +535,7 @@ describe('Creating settings', () => {
       serverless = given.a_serverless_instance()
         .forStage('devstage')
         .forRegion('eu-west-1')
-        .withApiGatewayCachingConfig(true, '0.5', 45);
+        .withApiGatewayCachingConfig();
     });
 
     describe('and they do not specify the stage', () => {
@@ -608,7 +593,7 @@ describe('Creating settings', () => {
         endpoint = given.a_serverless_function('list-cats')
           .withHttpEndpointInShorthand('get /cats');
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true)
+          .withApiGatewayCachingConfig()
           .withFunction(endpoint);
 
         cacheSettings = createSettingsFor(serverless);
@@ -634,7 +619,7 @@ describe('Creating settings', () => {
       endpoint = given.a_serverless_function('list-cats')
         .withHttpEndpoint('get', '/cat/');
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true)
+        .withApiGatewayCachingConfig()
         .withFunction(endpoint);
 
       cacheSettings = createSettingsFor(serverless);
@@ -650,7 +635,7 @@ describe('Creating settings', () => {
       endpoint = given.a_serverless_function('list-cats')
         .withHttpEndpoint('get', '/');
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true)
+        .withApiGatewayCachingConfig()
         .withFunction(endpoint);
 
       cacheSettings = createSettingsFor(serverless);
@@ -658,6 +643,86 @@ describe('Creating settings', () => {
 
     it('settings should contain the endpoint path as is', () => {
       expect(cacheSettings.endpointSettings[0].path).to.equal('/');
+    });
+  });
+
+  describe('when the global cache ttl is zero', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({ ttlInSeconds: 0 });
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should be supported', () => {
+      expect(cacheSettings.cacheTtlInSeconds).to.equal(0);
+    });
+  });
+
+  describe('when global cache ttl is less than zero', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({ ttlInSeconds: -123 });
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should set the default global cache ttl', () => {
+      expect(cacheSettings.cacheTtlInSeconds).to.equal(3600);
+    });
+  });
+
+  describe('when a function cache ttl is zero', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
+        .withFunction(given.a_serverless_function(getCatByPawIdFunctionName)
+          .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 0 }));
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should be supported', () => {
+      expect(cacheSettings.endpointSettings[0].cacheTtlInSeconds).to.equal(0);
+    });
+  });
+
+  describe('when a function cache ttl is less than zero', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
+        .withFunction(given.a_serverless_function(getCatByPawIdFunctionName)
+          .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: -234 }));
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should inherit cache ttl from global settings', () => {
+      expect(cacheSettings.endpointSettings[0].cacheTtlInSeconds).to.equal(60);
+    });
+  });
+
+  describe('when an additional endpoint cache ttl is zero', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
+        .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching: { enabled: true, ttlInSeconds: 0 } }]);
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should be supported', () => {
+      expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(0);
+    });
+  });
+
+  describe('when an additional endpoint cache ttl is less than zero', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
+        .withAdditionalEndpoints([{ method: 'GET', path: '/shelter', caching: { enabled: true, ttlInSeconds: -135 } }]);
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should inherit cache ttl from global settings', () => {
+      expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(60);
     });
   });
 });
