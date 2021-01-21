@@ -149,6 +149,10 @@ const patchPathFor = (path, method) => {
 }
 
 const updateStageFor = async (serverless, params, stage, region) => {
+  if (params.patchOperations.length == 0) {
+    serverless.cli.log(`[serverless-api-gateway-caching] Will not update API Gateway cache settings because apiGatewayIsShared is set to true.`);
+    return;
+  }
   const chunkSize = MAX_PATCH_OPERATIONS_PER_STAGE_UPDATE;
   const { patchOperations } = params;
   const paramsInChunks = [];

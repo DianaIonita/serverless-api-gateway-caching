@@ -33,10 +33,10 @@ class Serverless {
     return this;
   }
 
-  withApiGatewayCachingConfig(cachingEnabled, clusterSize, ttlInSeconds, perKeyInvalidation, dataEncrypted, apiGatewayIsShared) {
+  withApiGatewayCachingConfig({ cachingEnabled = true, clusterSize = '0.5', ttlInSeconds = 45, perKeyInvalidation, dataEncrypted, apiGatewayIsShared } = {}) {
     this.service.custom.apiGatewayCaching = {
       enabled: cachingEnabled,
-      apiGatewayIsShared: apiGatewayIsShared,
+      apiGatewayIsShared,
       clusterSize,
       ttlInSeconds,
       perKeyInvalidation,
@@ -65,7 +65,7 @@ class Serverless {
     return this;
   }
 
-  withAdditionalEndpoints(additionalEndpoints){
+  withAdditionalEndpoints(additionalEndpoints) {
     this.service.custom.apiGatewayCaching.additionalEndpoints = additionalEndpoints;
     return this;
   }
