@@ -27,7 +27,7 @@ describe('Updating stage cache settings', () => {
     let restApiId;
     before(async () => {
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(false)
+        .withApiGatewayCachingConfig({ cachingEnabled: false })
         .forRegion('someregion')
         .forStage('somestage');
       settings = new ApiGatewayCachingSettings(serverless);
@@ -83,7 +83,7 @@ describe('Updating stage cache settings', () => {
     describe('and there are no endpoints for which to enable caching', () => {
       before(async () => {
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(undefined, undefined, undefined, undefined, undefined, true)
+          .withApiGatewayCachingConfig({ apiGatewayIsShared: true })
           .forStage('somestage');
         settings = new ApiGatewayCachingSettings(serverless);
 
@@ -94,8 +94,8 @@ describe('Updating stage cache settings', () => {
         requestsToAws = serverless.getRequestsToAws();
       });
 
-      it('should not make calls to the AWS SDK', () => {
-        expect(requestsToAws).to.be.empty;
+      it('should not make calls the AWS SDK to update the stage', () => {
+        expect(requestsToAws.filter(a => a.method == 'updateStage')).to.be.empty;
       });
     });
 
@@ -108,7 +108,7 @@ describe('Updating stage cache settings', () => {
           .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45, dataEncrypted: true })
           .withHttpEndpoint('delete', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 60, undefined, false, true)
+          .withApiGatewayCachingConfig({ ttlInSeconds: 60, apiGatewayIsShared: true })
           .withFunction(endpointWithCaching)
           .withFunction(endpointWithoutCaching)
           .forStage('somestage');
@@ -224,7 +224,7 @@ describe('Updating stage cache settings', () => {
     describe('and there are no endpoints for which to enable caching', () => {
       before(async () => {
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 60)
+          .withApiGatewayCachingConfig()
           .forStage('somestage');
         settings = new ApiGatewayCachingSettings(serverless);
 
@@ -280,7 +280,7 @@ describe('Updating stage cache settings', () => {
           expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
             op: 'replace',
             path: '/*/*/caching/ttlInSeconds',
-            value: '60'
+            value: '45'
           });
         });
 
@@ -300,7 +300,7 @@ describe('Updating stage cache settings', () => {
           .withHttpEndpoint('get', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45, dataEncrypted: true })
           .withHttpEndpoint('delete', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
         serverless = given.a_serverless_instance()
-          .withApiGatewayCachingConfig(true, '0.5', 60)
+          .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
           .withFunction(endpointWithCaching)
           .withFunction(endpointWithoutCaching)
           .forStage('somestage');
@@ -534,8 +534,7 @@ describe('Updating stage cache settings', () => {
             let endpoint = given.a_serverless_function('get-my-cat')
               .withHttpEndpoint('get', '/personal/cat', scenario.endpointCachingSettings);
             serverless = given.a_serverless_instance()
-              .withApiGatewayCachingConfig(true, '0.5', 60,
-                { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' })
+              .withApiGatewayCachingConfig({ ttlInSeconds: 60, perKeyInvalidation: { requireAuthorization: true, handleUnauthorizedRequests: 'Ignore' } })
               .withFunction(endpoint)
               .forStage('somestage');
             settings = new ApiGatewayCachingSettings(serverless);
@@ -568,7 +567,7 @@ describe('Updating stage cache settings', () => {
         .withHttpEndpoint('any', '/cat', { enabled: true, ttlInSeconds: 45 });
 
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true, '0.5', 60)
+        .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
         .withFunction(endpointWithCaching)
         .forStage('somestage');
       settings = new ApiGatewayCachingSettings(serverless);
@@ -615,7 +614,7 @@ describe('Updating stage cache settings', () => {
         .withHttpEndpoint('any', '/cat', { enabled: false });
 
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true, '0.5', 60)
+        .withApiGatewayCachingConfig({ ttlInSeconds: 60 })
         .withFunction(endpointWithoutCaching)
         .forStage('somestage');
       settings = new ApiGatewayCachingSettings(serverless);
@@ -646,7 +645,7 @@ describe('Updating stage cache settings', () => {
         .withHttpEndpointInShorthand('get /cats');
 
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true)
+        .withApiGatewayCachingConfig()
         .withFunction(endpoint)
         .forStage('somestage');
       settings = new ApiGatewayCachingSettings(serverless);
@@ -676,7 +675,7 @@ describe('Updating stage cache settings', () => {
 
       expectedStageName = 'somestage';
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig(true, '0.5', 60)
+        .withApiGatewayCachingConfig()
         .forStage(expectedStageName);
       for (let endpoint of endpoints) {
         serverless = serverless.withFunction(endpoint)
