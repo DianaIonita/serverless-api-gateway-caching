@@ -40,7 +40,7 @@ describe('Configuring a default base path', () => {
         settings = new ApiGatewayCachingSettings(serverless);
     });
 
-    it('should be prepended to each endpoint path', () => {      
+    it('should just use the endpoint path', () => {      
       expect(path_of(functionName, settings)).to.equal(endpointPath);
     });
   });
