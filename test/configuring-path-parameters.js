@@ -634,7 +634,7 @@ describe('Configuring path parameter caching', () => {
         expect(method.Properties.Integration.CacheNamespace).to.exist;
       });
     });
-  })
+  });
 });
 
 const when_configuring_path_parameters = (serverless) => {
