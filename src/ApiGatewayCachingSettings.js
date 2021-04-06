@@ -95,6 +95,7 @@ class ApiGatewayCachingSettings {
     const cachingSettings = serverless.service.custom.apiGatewayCaching;
     this.cachingEnabled = cachingSettings.enabled;
     this.apiGatewayIsShared = cachingSettings.apiGatewayIsShared;
+    this.restApiId = cachingSettings.restApiId;
 
     if (options) {
       this.stage = options.stage || serverless.service.provider.stage;
