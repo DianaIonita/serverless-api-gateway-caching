@@ -57,6 +57,17 @@ class ApiGatewayEndpointCachingSettings {
       this.path = this.path.slice(0, -1);
     }
 
+    let { basePath } = globalSettings;
+    if (basePath) {
+      if (!basePath.startsWith('/')) {
+        basePath = '/'.concat(basePath);
+      }
+      if (basePath.endsWith('/')) {
+        basePath = basePath.slice(0, -1);
+      }
+      this.path = basePath.concat(this.path);
+    }
+
     if (!event.http.caching) {
       this.cachingEnabled = false;
       return;
@@ -95,6 +106,8 @@ class ApiGatewayCachingSettings {
     const cachingSettings = serverless.service.custom.apiGatewayCaching;
     this.cachingEnabled = cachingSettings.enabled;
     this.apiGatewayIsShared = cachingSettings.apiGatewayIsShared;
+    this.restApiId = cachingSettings.restApiId;
+    this.basePath = cachingSettings.basePath;
 
     if (options) {
       this.stage = options.stage || serverless.service.provider.stage;
