@@ -5,35 +5,56 @@ const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSett
 
 describe('Configuring a default base path', () => {
   const serviceName = 'cat-api';
-  const basePath = '/animals';
   const endpointPath = '/cat/{pawId}';
   const functionName = 'get-cat-by-paw-id';
 
-  let settings;
-
-  describe('when a base path is specified in the global settings', () => {
-    before(() => {
-      const endpoint = given.a_serverless_function(functionName)
-        .withHttpEndpoint('get', endpointPath, { enabled: true });
-      
-      const serverless = given.a_serverless_instance(serviceName)
-        .withApiGatewayCachingConfig({ basePath: '/animals' })
-        .withFunction(endpoint);
-
-        settings = new ApiGatewayCachingSettings(serverless);
-    });
-
-    it('should be prepended to each endpoint path', () => {
-      expect(path_of(functionName, settings)).to.equal(`${basePath}/${endpointPath}`);
-    });
+  describe('when a base path is specified', () => {
+    const scenarios = [
+      {
+        description: 'does not start with a forward slash',
+        basePath: 'animals'
+      },
+      {
+        description: 'starts with a forward slash',
+        basePath: '/animals'
+      },
+      {
+        description: 'has a trailing slash',
+        basePath: 'animals/'
+      }
+    ];
+    let settings;
+    
+    for (scenario of scenarios) {
+      describe(`and ${scenario.description}`, () => {
+        before(() => {
+          const endpoint = given
+            .a_serverless_function(functionName)
+            .withHttpEndpoint('get', endpointPath, { enabled: true });
+            
+          const serverless = given
+            .a_serverless_instance(serviceName)
+            .withApiGatewayCachingConfig({ basePath: scenario.basePath })
+            .withFunction(endpoint);
+    
+          settings = new ApiGatewayCachingSettings(serverless);
+        });
+    
+        it('should be prepended to each endpoint and form a valid path', () => {
+          expect(path_of(functionName, settings)).to.equal(`/animals${endpointPath}`);
+        });
+      });
+    }
   });
 
   describe('when no base path is specified', () => {
     before(() => {
-      const endpoint = given.a_serverless_function(functionName)
+      const endpoint = given
+        .a_serverless_function(functionName)
         .withHttpEndpoint('get', endpointPath, { enabled: true });
       
-      const serverless = given.a_serverless_instance(serviceName)
+      const serverless = given
+        .a_serverless_instance(serviceName)
         .withApiGatewayCachingConfig()
         .withFunction(endpoint);
 
