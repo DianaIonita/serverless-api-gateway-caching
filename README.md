@@ -265,7 +265,11 @@ functions:
 Cache key parameters coming from multi-value query strings and multi-value headers are currently not supported.
 
 ## Configuring a shared API Gateway
-This just means that no changes are applied to the root caching configuration of the API Gateway, however `ttlInSeconds`, `dataEncryption` and `perKeyInvalidation` are still applied to all functions, unless specifically overridden.
+Setting `apiGatewayIsShared` to `true` means that no changes are applied to the root caching configuration of the API Gateway. However, `ttlInSeconds`, `dataEncryption` and `perKeyInvalidation` are still applied to all functions, unless specifically overridden.
+
+If the shared API Gateway is in a different CloudFormation stack, you'll need to export its `RestApiId` and pass it to the plugin via the optional `restApiId` setting. If the gateway is part of the stack you are deploying, you don't need to do this; the plugin will find the `RestApiId` automatically.
+
+If the shared gateway has a default base path that is not part of your endpoint configuration, you can specify it using the optional `basePath` setting.
 
 ```yml
 plugins:
@@ -275,6 +279,8 @@ custom:
   apiGatewayCaching:
     enabled: true
     apiGatewayIsShared: true
+    restApiId: ${cf:api-gateway-${self:provider.stage}.RestApiId}
+    basePath: /animals
     clusterSize: '0.5'
     ttlInSeconds: 300
     dataEncrypted: true
@@ -295,7 +301,7 @@ resources:
       Properties:
         ParentId:
           Fn::GetAtt:
-            - ApiGatewayRestApi # the default Rest API logical ID
+            - ApiGatewayRestApi # the default REST API logical ID
             - RootResourceId
         PathPart: serverless # the endpoint in your API that is set as proxy
         RestApiId:

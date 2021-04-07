@@ -40,7 +40,7 @@ describe('Updating stage cache settings for additional endpoints defined as Clou
           apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
         });
 
-        it('should contain the Rest Api Id', () => {
+        it('should contain the REST API ID', () => {
           expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
         });
 

@@ -8,14 +8,14 @@ describe('Creating plugin', () => {
   describe('When updating the CloudFormation template', () => {
     let scenarios = [
       {
-        description: 'there is no rest api',
+        description: 'there is no REST API',
         thereIsARestApi: false,
-        expectedLogMessage: '[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.',
+        expectedLogMessage: '[serverless-api-gateway-caching] No REST API found. Caching settings will not be updated.',
         expectedToOutputRestApiId: false,
         expectedToAddPathParametersCacheConfig: false
       },
       {
-        description: 'there is a rest api and caching is enabled',
+        description: 'there is a REST API and caching is enabled',
         cachingEnabled: true,
         thereIsARestApi: true,
         expectedLogMessage: undefined,
@@ -23,7 +23,7 @@ describe('Creating plugin', () => {
         expectedToAddPathParametersCacheConfig: true,
       },
       {
-        description: 'there is a rest api and caching is disabled',
+        description: 'there is a REST API and caching is disabled',
         cachingEnabled: false,
         thereIsARestApi: true,
         expectedLogMessage: undefined,
@@ -55,7 +55,7 @@ describe('Creating plugin', () => {
           expect(logCalledWith).to.equal(scenario.expectedLogMessage);
         });
 
-        it(`is expected to output rest api id: ${scenario.expectedToOutputRestApiId}`, () => {
+        it(`is expected to output REST API ID: ${scenario.expectedToOutputRestApiId}`, () => {
           expect(outputRestApiIdCalled).to.equal(scenario.expectedToOutputRestApiId);
         });
 
@@ -69,14 +69,14 @@ describe('Creating plugin', () => {
   describe('When updating the stage', () => {
     let scenarios = [
       {
-        description: 'there is no rest api',
+        description: 'there is no REST API',
         thereIsARestApi: false,
-        expectedLogMessage: '[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.',
+        expectedLogMessage: '[serverless-api-gateway-caching] No REST API found. Caching settings will not be updated.',
         expectedToUpdateStageCache: false,
         expectedToHaveSettings: false
       },
       {
-        description: 'there is a rest api',
+        description: 'there is a REST API',
         thereIsARestApi: true,
         expectedLogMessage: undefined,
         expectedToUpdateStageCache: true,

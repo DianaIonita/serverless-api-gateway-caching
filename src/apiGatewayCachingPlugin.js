@@ -24,9 +24,9 @@ class ApiGatewayCachingPlugin {
   }
 
   updateCloudFormationTemplate() {
-    this.thereIsARestApi = restApiExists(this.serverless);
+    this.thereIsARestApi = restApiExists(this.serverless, this.settings);
     if (!this.thereIsARestApi) {
-      this.serverless.cli.log(`[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.`);
+      this.serverless.cli.log(`[serverless-api-gateway-caching] No REST API found. Caching settings will not be updated.`);
       return;
     }
 
@@ -41,9 +41,9 @@ class ApiGatewayCachingPlugin {
   }
 
   updateStage() {
-    this.thereIsARestApi = restApiExists(this.serverless);
+    this.thereIsARestApi = restApiExists(this.serverless, this.settings);
     if (!this.thereIsARestApi) {
-      this.serverless.cli.log(`[serverless-api-gateway-caching] No Rest API found. Caching settings will not be updated.`);
+      this.serverless.cli.log(`[serverless-api-gateway-caching] No REST API found. Caching settings will not be updated.`);
       return;
     }
 

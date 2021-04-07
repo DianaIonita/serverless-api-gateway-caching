@@ -33,10 +33,12 @@ class Serverless {
     return this;
   }
 
-  withApiGatewayCachingConfig({ cachingEnabled = true, clusterSize = '0.5', ttlInSeconds = 45, perKeyInvalidation, dataEncrypted, apiGatewayIsShared } = {}) {
+  withApiGatewayCachingConfig({ cachingEnabled = true, clusterSize = '0.5', ttlInSeconds = 45, perKeyInvalidation, dataEncrypted, apiGatewayIsShared, restApiId, basePath } = {}) {
     this.service.custom.apiGatewayCaching = {
       enabled: cachingEnabled,
       apiGatewayIsShared,
+      restApiId,
+      basePath,
       clusterSize,
       ttlInSeconds,
       perKeyInvalidation,
@@ -70,7 +72,7 @@ class Serverless {
     return this;
   }
 
-  withPredefinedRestApiId(restApiId) {
+  withProviderRestApiId(restApiId) {
     if (!this.service.provider.apiGateway) {
       this.service.provider.apiGateway = {}
     }

@@ -57,7 +57,7 @@ describe('Updating stage cache settings', () => {
         expect(apiGatewayRequest.region).to.equal('someregion');
       });
 
-      it('should contain the Rest Api Id', () => {
+      it('should contain the REST API ID', () => {
         expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
       });
 
@@ -132,7 +132,7 @@ describe('Updating stage cache settings', () => {
           apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
         });
 
-        it('should contain the Rest Api Id', () => {
+        it('should contain the REST API ID', () => {
           expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
         });
 
@@ -240,7 +240,7 @@ describe('Updating stage cache settings', () => {
           apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
         });
 
-        it('should contain the Rest Api Id', () => {
+        it('should contain the REST API ID', () => {
           expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
         });
 
@@ -318,7 +318,7 @@ describe('Updating stage cache settings', () => {
           apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
         });
 
-        it('should contain the Rest Api Id', () => {
+        it('should contain the REST API ID', () => {
           expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
         });
 
@@ -702,7 +702,7 @@ describe('Updating stage cache settings', () => {
         secondRequestToUpdateStage = requestsToAwsToUpdateStage[1];
       });
 
-      it('should specify the Rest Api Id', () => {
+      it('should specify the REST API ID', () => {
         expect(firstRequestToUpdateStage.properties.restApiId).to.equal(restApiId);
         expect(secondRequestToUpdateStage.properties.restApiId).to.equal(restApiId);
       });
