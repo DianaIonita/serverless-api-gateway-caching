@@ -1,5 +1,3 @@
-const split = require('lodash.split');
-
 const getResourcesByName = (name, serverless) => {
   let resourceKeys = Object.keys(serverless.service.provider.compiledCloudFormationTemplate.Resources);
   for (let resourceName of resourceKeys) {
@@ -9,36 +7,14 @@ const getResourcesByName = (name, serverless) => {
   }
 }
 
-const getApiGatewayMethodNameFor = (path, httpMethod) => {
-  const pathElements = split(path, '/');
-  pathElements.push(httpMethod.toLowerCase());
-  let gatewayResourceName = pathElements
-    .map(element => {
-      element = element.toLowerCase();
-      element = element.replaceAll('+', '');
-      element = element.replaceAll('_', '');
-      element = element.replaceAll('.', '');
-      element = element.replaceAll('-', 'Dash');
-      if (element.startsWith('{')) {
-        element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
-      }
-      //capitalize first letter
-      return element.charAt(0).toUpperCase() + element.slice(1);
-    }).reduce((a, b) => a + b);
-
-  gatewayResourceName = "ApiGatewayMethod" + gatewayResourceName;
-  return gatewayResourceName;
-}
-
 const addPathParametersCacheConfig = (settings, serverless) => {
   for (let endpointSettings of settings.endpointSettings) {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
     }
-    const resourceName = getApiGatewayMethodNameFor(endpointSettings.path, endpointSettings.method);
-    const method = getResourcesByName(resourceName, serverless);
+    const method = getResourcesByName(endpointSettings.gatewayResourceName, serverless);
     if (!method) {
-      serverless.cli.log(`[serverless-api-gateway-caching] The method ${resourceName} couldn't be found in the
+      serverless.cli.log(`[serverless-api-gateway-caching] The method ${endpointSettings.gatewayResourceName} couldn't be found in the
                            compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
       continue;
     }
@@ -74,11 +50,10 @@ const addPathParametersCacheConfig = (settings, serverless) => {
         method.Properties.Integration.CacheKeyParameters.push(cacheKeyParameter.name)
       }
     }
-    method.Properties.Integration.CacheNamespace = `${resourceName}CacheNS`;
+    method.Properties.Integration.CacheNamespace = `${endpointSettings.gatewayResourceName}CacheNS`;
   }
 }
 
 module.exports = {
-  addPathParametersCacheConfig: addPathParametersCacheConfig,
-  getApiGatewayMethodNameFor: getApiGatewayMethodNameFor
+  addPathParametersCacheConfig: addPathParametersCacheConfig
 }

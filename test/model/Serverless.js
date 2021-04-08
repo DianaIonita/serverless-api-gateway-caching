@@ -130,7 +130,7 @@ class Serverless {
 const clone = object => JSON.parse(JSON.stringify(object));
 
 const createMethodResourceNameFor = (path, method) => {
-  const pathElements = split(path, '/');
+  const pathElements = path.split('/');
   pathElements.push(method.toLowerCase());
   let gatewayResourceName = pathElements
     .map(element => {
