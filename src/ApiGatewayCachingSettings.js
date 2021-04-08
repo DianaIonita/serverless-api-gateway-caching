@@ -22,6 +22,27 @@ const isApiGatewayEndpoint = event => {
   return event.http ? true : false;
 }
 
+const getApiGatewayResourceNameFor = (path, httpMethod) => {
+  const pathElements = path.split('/');
+  pathElements.push(httpMethod.toLowerCase());
+  let gatewayResourceName = pathElements
+    .map(element => {
+      element = element.toLowerCase();
+      element = element.replaceAll('+', '');
+      element = element.replaceAll('_', '');
+      element = element.replaceAll('.', '');
+      element = element.replaceAll('-', 'Dash');
+      if (element.startsWith('{')) {
+        element = element.substring(element.indexOf('{') + 1, element.indexOf('}')) + "Var";
+      }
+      //capitalize first letter
+      return element.charAt(0).toUpperCase() + element.slice(1);
+    }).reduce((a, b) => a + b);
+
+  gatewayResourceName = "ApiGatewayMethod" + gatewayResourceName;
+  return gatewayResourceName;
+}
+
 class PerKeyInvalidationSettings {
   constructor(cachingSettings) {
     let { perKeyInvalidation } = cachingSettings;
@@ -56,6 +77,8 @@ class ApiGatewayEndpointCachingSettings {
     if (this.path.endsWith('/') && this.path.length > 1) {
       this.path = this.path.slice(0, -1);
     }
+
+    this.gatewayResourceName = getApiGatewayResourceNameFor(this.path, this.method);
 
     let { basePath } = globalSettings;
     if (basePath) {
