@@ -1,6 +1,6 @@
 {
   "name": "serverless-api-gateway-caching",
-  "version": "1.7.1",
+  "version": "1.7.2",
   "description": "A plugin for the serverless framework which helps with configuring caching for API Gateway endpoints.",
   "main": "src/apiGatewayCachingPlugin.js",
   "scripts": {
@@ -19,8 +19,7 @@
   "license": "ISC",
   "dependencies": {
     "lodash.get": "^4.4.2",
-    "lodash.isempty": "^4.4.0",
-    "lodash.split": "^4.4.0"
+    "lodash.isempty": "^4.4.0"
   },
   "bugs": {
     "url": "https://github.com/DianaIonita/serverless-api-gateway-caching/issues"
@@ -34,6 +33,7 @@
     "chance": "^1.0.16",
     "mocha": "^8.1.3",
     "mocha-junit-reporter": "^1.18.0",
-    "proxyquire": "^2.1.0"
+    "proxyquire": "^2.1.0",
+    "lodash.split": "^4.4.0"
   }
 }

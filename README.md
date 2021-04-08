@@ -246,7 +246,7 @@ custom:
     enabled: true
 
 functions:
-  # Cache responses for POST requests based on the whole request body
+  # Cache responses for POST requests based on a part of the request body
   cats-graphql:
     handler: graphql/handler.handle
     events:

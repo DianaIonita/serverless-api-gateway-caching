@@ -108,6 +108,9 @@ class ApiGatewayCachingPlugin {
         apiGatewayCaching: {
           properties: {
             enabled: { type: 'boolean' },
+            apiGatewayIsShared: { type: 'boolean' },
+            basePath: { type: 'string' },
+            restApiId: { type: 'string' },
             clusterSize: { type: 'string' },
             ttlInSeconds: { type: 'number' },
             dataEncrypted: { type: 'boolean' },
