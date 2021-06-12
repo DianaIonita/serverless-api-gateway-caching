@@ -7,7 +7,7 @@ const getConfiguredRestApiId = (serverless) => {
   return get(serverless, 'service.provider.apiGateway.restApiId')
 }
 
-const restApiExists = (serverless, settings) => {
+const restApiExists = async (serverless, settings) => {
   if (get(settings, 'restApiId')) {
     return true;
   }
@@ -18,6 +18,14 @@ const restApiExists = (serverless, settings) => {
   const resource = serverless.service.provider.compiledCloudFormationTemplate.Resources['ApiGatewayRestApi'];
   if (resource) {
     return true;
+  }
+
+  const stack = await getAlreadyDeployedStack(serverless, settings);
+  if (stack) {
+    const restApiIdFromAlreadyDeployedStack = await retrieveRestApiId(serverless, settings);
+    if (restApiIdFromAlreadyDeployedStack) {
+      return true;
+    }
   }
   return false;
 }
@@ -32,21 +40,35 @@ const outputRestApiIdTo = (serverless) => {
   };
 };
 
+const getAlreadyDeployedStack = async (serverless, settings) => {
+  const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
+  try {
+    const stack = await serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
+      settings.stage,
+      settings.region
+    );
+    return stack;
+  }
+  catch (error) {
+    serverless.cli.log(`[serverless-api-gateway-caching] Could not retrieve stack because: ${error.message}.`);
+    return;
+  }
+}
+
 const retrieveRestApiId = async (serverless, settings) => {
   if (settings.restApiId) {
     return settings.restApiId;
   }
-  
-  const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
 
-  const cloudFormation = await serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
-    settings.stage,
-    settings.region
-  );
-  const outputs = cloudFormation.Stacks[0].Outputs;
-  const restApiKey = outputs.find(({ OutputKey }) => OutputKey === REST_API_ID_KEY).OutputValue;
-
-  return restApiKey;
+  const stack = await getAlreadyDeployedStack(serverless, settings);
+  const outputs = stack.Stacks[0].Outputs;
+  const restApiKey = outputs.find(({ OutputKey }) => OutputKey === REST_API_ID_KEY)
+  if (restApiKey) {
+    return restApiKey.OutputValue;
+  }
+  else {
+    serverless.cli.log(`[serverless-api-gateway-caching] Could not find stack output variable named ${REST_API_ID_KEY}.`);
+  }
 };
 
 module.exports = {
