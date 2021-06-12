@@ -1,5 +1,3 @@
-const split = require('lodash.split');
-
 class Serverless {
   constructor(serviceName) {
     this._logMessages = [];

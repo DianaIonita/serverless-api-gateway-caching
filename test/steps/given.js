@@ -15,11 +15,15 @@ const a_rest_api_id = () => {
   return chance.guid();
 }
 
-const a_rest_api_id_for_deployment = async (serverless, settings) => {
+const a_rest_api_id_for_deployment = (serverless, settings) => {
   let restApiId = a_rest_api_id();
   serverless.setRestApiId(restApiId, settings);
 
   return restApiId;
+}
+
+const the_rest_api_id_is_not_set_for_deployment = (serverless, settings) => {
+  serverless.setRestApiId(undefined, settings);
 }
 
 const endpoints_with_caching_enabled = (endpointCount) => {
@@ -45,6 +49,7 @@ module.exports = {
   a_serverless_function,
   a_rest_api_id,
   a_rest_api_id_for_deployment,
+  the_rest_api_id_is_not_set_for_deployment,
   endpoints_with_caching_enabled,
   an_additional_endpoint
 }
