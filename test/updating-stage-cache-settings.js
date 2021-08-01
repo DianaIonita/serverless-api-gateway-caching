@@ -667,6 +667,34 @@ describe('Updating stage cache settings', () => {
     });
   });
 
+  describe('when an http endpoint path is empty', () => {
+    before(async () => {
+      let endpoint = given.a_serverless_function('list-cats')
+        .withHttpEndpoint('get', '', { enabled: true });
+
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig()
+        .withFunction(endpoint)
+        .forStage('somestage');
+      settings = new ApiGatewayCachingSettings(serverless);
+
+      restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
+
+      await when_updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
+      apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+    });
+
+    it(`should enable caching for the endpoint`, () => {
+      expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+        op: 'replace',
+        path: `/~1/GET/caching/enabled`,
+        value: 'true'
+      });
+    });
+  });
+
   // https://github.com/DianaIonita/serverless-api-gateway-caching/issues/46
   describe('When there are over twenty two http endpoints defined', () => {
     let requestsToAwsToUpdateStage, restApiId, expectedStageName;
