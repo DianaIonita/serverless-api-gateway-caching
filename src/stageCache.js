@@ -106,7 +106,7 @@ const httpEventOf = (lambda, endpointSettings) => {
       }
     });
 
-  return httpEvents.filter(e => e.path = endpointSettings.path || "/" + e.path === endpointSettings.path)
+  return httpEvents.filter(e => (e.path === endpointSettings.path) || (`/${e.path}` === endpointSettings.path))
     .filter(e => e.method.toUpperCase() == endpointSettings.method.toUpperCase());
 }
 
