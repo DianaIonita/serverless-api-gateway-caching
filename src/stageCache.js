@@ -53,7 +53,7 @@ const createPatchForStage = (settings) => {
   return patch;
 }
 
-const patchForMethod = (path, method, endpointSettings) => {
+const patchForMethod = (path, method, endpointSettings, stageState) => {
   let patchPath = patchPathFor(path, method);
   let patch = [{
     op: 'replace',
@@ -86,6 +86,24 @@ const patchForMethod = (path, method, endpointSettings) => {
       });
     }
   }
+
+  // Ensure we propogate stage level settings updates to the overrides
+  patch.push({
+    op: 'replace',
+    path: `/${patchPath}/logging/loglevel`,
+    value: stageState.methodSettings['*/*'].loggingLevel,
+  });
+  patch.push({
+    op: 'replace',
+    path: `/${patchPath}/logging/dataTrace`,
+    value: stageState.methodSettings['*/*'].dataTraceEnabled ? 'true' : 'false',
+  });
+  patch.push({
+    op: 'replace',
+    path: `/${patchPath}/metrics/enabled`,
+    value: stageState.methodSettings['*/*'].metricsEnabled ? 'true' : 'false',
+  });
+
   return patch;
 }
 
@@ -110,7 +128,7 @@ const httpEventOf = (lambda, endpointSettings) => {
     .filter(e => e.method.toUpperCase() == endpointSettings.method.toUpperCase());
 }
 
-const createPatchForEndpoint = (endpointSettings, serverless) => {
+const createPatchForEndpoint = (endpointSettings, serverless, stageState) => {
   let lambda = serverless.service.getFunction(endpointSettings.functionName);
   if (isEmpty(lambda.events)) {
     serverless.cli.log(`[serverless-api-gateway-caching] Lambda ${endpointSettings.functionName} has not defined events.`);
@@ -128,13 +146,13 @@ const createPatchForEndpoint = (endpointSettings, serverless) => {
     let httpMethodsToDisableCacheFor = ['DELETE', 'HEAD', 'OPTIONS', 'PATCH', 'POST', 'PUT']; // TODO could come from settings, vNext
     for (let methodWithCacheDisabled of httpMethodsToDisableCacheFor) {
       patch = patch.concat(patchForMethod(path, methodWithCacheDisabled,
-        { cachingEnabled: false }));
+        { cachingEnabled: false }, stageState));
     };
 
-    patch = patch.concat(patchForMethod(path, 'GET', endpointSettings));
+    patch = patch.concat(patchForMethod(path, 'GET', endpointSettings, stageState));
   }
   else {
-    patch = patch.concat(patchForMethod(path, method, endpointSettings));
+    patch = patch.concat(patchForMethod(path, method, endpointSettings, stageState));
   }
   return patch;
 }
@@ -185,6 +203,8 @@ const updateStageCacheSettings = async (settings, serverless) => {
 
   let restApiId = await retrieveRestApiId(serverless, settings);
 
+  let stageState = await serverless.providers.aws.request('APIGateway', 'getStage', { restApiId, stageName: settings.stage }, { region: settings.region });
+
   let patchOps = createPatchForStage(settings);
 
   let endpointsWithCachingEnabled = settings.endpointSettings.filter(e => e.cachingEnabled)
@@ -194,13 +214,13 @@ const updateStageCacheSettings = async (settings, serverless) => {
   }
 
   for (let endpointSettings of settings.endpointSettings) {
-    let endpointPatch = createPatchForEndpoint(endpointSettings, serverless);
+    let endpointPatch = createPatchForEndpoint(endpointSettings, serverless, stageState);
     patchOps = patchOps.concat(endpointPatch);
   }
 
   // TODO handle 'ANY' method, if possible
   for (let additionalEndpointSettings of settings.additionalEndpointSettings) {
-    let endpointPatch = patchForMethod(additionalEndpointSettings.path, additionalEndpointSettings.method, additionalEndpointSettings);
+    let endpointPatch = patchForMethod(additionalEndpointSettings.path, additionalEndpointSettings.method, additionalEndpointSettings, stageState);
     patchOps = patchOps.concat(endpointPatch);
   }
 
