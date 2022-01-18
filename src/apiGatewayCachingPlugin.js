@@ -73,11 +73,13 @@ class ApiGatewayCachingPlugin {
       type: 'object',
       properties: {
         caching: {
+          type: 'object',
           properties: {
             enabled: { type: 'boolean' },
             ttlInSeconds: { type: 'number' },
             dataEncrypted: { type: 'boolean' },
             perKeyInvalidation: {
+              type: 'object',
               properties: {
                 requireAuthorization: { type: 'boolean' },
                 handleUnauthorizedRequests: {
@@ -89,6 +91,7 @@ class ApiGatewayCachingPlugin {
             cacheKeyParameters: {
               type: 'array',
               items: {
+                type: 'object',
                 properties: {
                   name: { type: 'string' },
                   value: { type: 'string' }
@@ -106,6 +109,7 @@ class ApiGatewayCachingPlugin {
       type: 'object',
       properties: {
         apiGatewayCaching: {
+          type: 'object',
           properties: {
             enabled: { type: 'boolean' },
             apiGatewayIsShared: { type: 'boolean' },
@@ -115,6 +119,7 @@ class ApiGatewayCachingPlugin {
             ttlInSeconds: { type: 'number' },
             dataEncrypted: { type: 'boolean' },
             perKeyInvalidation: {
+              type: 'object',
               properties: {
                 requireAuthorization: { type: 'boolean' },
                 handleUnauthorizedRequests: {
@@ -126,10 +131,12 @@ class ApiGatewayCachingPlugin {
             additionalEndpoints: {
               type: 'array',
               items: {
+                type: 'object',
                 properties: {
                   method: { type: 'string' },
                   path: { type: 'string' },
                   caching: {
+                    type: 'object',
                     properties: {
                       enabled: { type: 'boolean' },
                       ttlInSeconds: { type: 'number' },
