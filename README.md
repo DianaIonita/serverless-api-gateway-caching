@@ -313,6 +313,8 @@ custom:
   apiGatewayCaching:
     enabled: true # enables caching for endpoints in this project (each endpoint must also set caching: enabled to true)
     apiGatewayIsShared: true # makes sure the settings on the Main API Gateway are not changed
+    restApiId: ${cf:api-gateway-${self:provider.stage}.RestApiId}
+    basePath: /animals
 
 functions:
   # caching disabled, it must be explicitly enabled
