@@ -289,6 +289,52 @@ custom:
       handleUnauthorizedRequests: Ignore
 ```
 
+### Example of configuring an API Gateway with endpoints scattered across multiple serverless projects
+
+In the project hosting the main API Gateway deployment:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true # create an API cache
+    ttlInSeconds: 0 # but don't cache responses by default (individual endpoints can override this)
+```
+
+In a project that references that API Gateway:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true # enables caching for endpoints in this project (each endpoint must also set caching: enabled to true)
+    apiGatewayIsShared: true # makes sure the settings on the Main API Gateway are not changed
+    restApiId: ${cf:api-gateway-${self:provider.stage}.RestApiId}
+    basePath: /animals
+
+functions:
+  # caching disabled, it must be explicitly enabled
+  adoptCat:
+    handler: adoptCat.handle
+    events:
+      - http:
+          path: /cat/adoption
+          method: post
+
+  getCats:
+    handler: getCats.handle
+    events:
+      - http:
+          path: /cats
+          method: get
+          caching:
+            enabled: true # enables caching for this endpoint
+```
+
 ## Configuring caching settings for endpoints defined in CloudFormation
 You can use this feature to configure caching for endpoints which are defined in CloudFormation and not as serverless functions.
 If your `serverless.yml` contains, for example, a [HTTP Proxy](https://www.serverless.com/framework/docs/providers/aws/events/apigateway/#setting-an-http-proxy-on-api-gateway) like this:
