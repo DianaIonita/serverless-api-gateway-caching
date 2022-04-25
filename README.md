@@ -227,7 +227,6 @@ functions:
       - http:
           path: /graphql
           method: post
-          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
           caching:
             enabled: true
             cacheKeyParameters:
@@ -253,7 +252,6 @@ functions:
       - http:
           path: /graphql
           method: post
-          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
           caching:
             enabled: true
             cacheKeyParameters:
@@ -287,6 +285,52 @@ custom:
     perKeyInvalidation:
       requireAuthorization: true
       handleUnauthorizedRequests: Ignore
+```
+
+### Example of configuring an API Gateway with endpoints scattered across multiple serverless projects
+
+In the project hosting the main API Gateway deployment:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true # create an API cache
+    ttlInSeconds: 0 # but don't cache responses by default (individual endpoints can override this)
+```
+
+In a project that references that API Gateway:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true # enables caching for endpoints in this project (each endpoint must also set caching: enabled to true)
+    apiGatewayIsShared: true # makes sure the settings on the Main API Gateway are not changed
+    restApiId: ${cf:api-gateway-${self:provider.stage}.RestApiId}
+    basePath: /animals
+
+functions:
+  # caching disabled, it must be explicitly enabled
+  adoptCat:
+    handler: adoptCat.handle
+    events:
+      - http:
+          path: /cat/adoption
+          method: post
+
+  getCats:
+    handler: getCats.handle
+    events:
+      - http:
+          path: /cats
+          method: get
+          caching:
+            enabled: true # enables caching for this endpoint
 ```
 
 ## Configuring caching settings for endpoints defined in CloudFormation
@@ -396,7 +440,6 @@ functions:
       - http:
           path: /cats
           method: post
-          integration: lambda # you must use lambda integration for this to work
           caching:
             enabled: true
             cacheKeyParameters:
