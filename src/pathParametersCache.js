@@ -30,9 +30,12 @@ const addPathParametersCacheConfig = (settings, serverless) => {
         let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
         method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
 
-        if (method.Properties.Integration.Type !== 'AWS_PROXY') {
+        // in v1.8.0 "lambda" integration check was removed because setting cache key parameters seemed to work for both AWS_PROXY and AWS (lambda) integration
+        // reconsider if this becomes an issue
+
+        // if (method.Properties.Integration.Type !== 'AWS_PROXY') {
           method.Properties.Integration.RequestParameters[`integration.${cacheKeyParameter.name}`] = `method.${cacheKeyParameter.name}`;
-        }
+        // }
 
         method.Properties.Integration.CacheKeyParameters.push(`method.${cacheKeyParameter.name}`);
       } else {
@@ -44,9 +47,9 @@ const addPathParametersCacheConfig = (settings, serverless) => {
         ) {
           method.Properties.RequestParameters[cacheKeyParameter.mappedFrom] = (existingValue == null || existingValue == undefined) ? {} : existingValue;
         }
-        if (method.Properties.Integration.Type !== 'AWS_PROXY') {
+        // if (method.Properties.Integration.Type !== 'AWS_PROXY') {
           method.Properties.Integration.RequestParameters[cacheKeyParameter.name] = cacheKeyParameter.mappedFrom;
-        }
+        // }
         method.Properties.Integration.CacheKeyParameters.push(cacheKeyParameter.name)
       }
     }

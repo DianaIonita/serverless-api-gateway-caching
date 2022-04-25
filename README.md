@@ -227,7 +227,6 @@ functions:
       - http:
           path: /graphql
           method: post
-          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
           caching:
             enabled: true
             cacheKeyParameters:
@@ -253,7 +252,6 @@ functions:
       - http:
           path: /graphql
           method: post
-          integration: lambda # you must use lambda integration (instead of the default proxy integration) for this to work
           caching:
             enabled: true
             cacheKeyParameters:
@@ -442,7 +440,6 @@ functions:
       - http:
           path: /cats
           method: post
-          integration: lambda # you must use lambda integration for this to work
           caching:
             enabled: true
             cacheKeyParameters:
