@@ -41,7 +41,6 @@ describe('Configuring path parameter caching', () => {
     });
   });
 
-  // in v1.8.0 "lambda" integration check was removed because setting cache key parameters seemed to work for both AWS_PROXY and AWS (lambda) integration
   describe('when one endpoint with lambda integration has cache key parameters', () => {
     let cacheKeyParameters, method, functionWithCachingName;
     before(() => {
@@ -71,10 +70,10 @@ describe('Configuring path parameter caching', () => {
       }
     });
 
-    it('should set integration request parameters', () => {
+    it('should not set integration request parameters', () => {
       for (let parameter of cacheKeyParameters) {
         expect(method.Properties.Integration.RequestParameters)
-          .to.include({
+          .to.not.include({
             [`integration.${parameter.name}`]: `method.${parameter.name}`
           });
       }
@@ -535,6 +534,7 @@ describe('Configuring path parameter caching', () => {
     });
   }
 
+    // in v1.8.0 "lambda" integration check was removed because setting cache key parameters seemed to work for both AWS_PROXY and AWS (lambda) integration
   describe('when there are methods with mapped cache key parameters', () => {
     let method, functionWithCachingName, getMethodCacheKeyParameters, postMethodCacheKeyParameters;
     before(() => {
