@@ -48,8 +48,8 @@ describe('Updating stage cache settings for additional endpoints defined as Clou
           expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
         });
 
-        it('should specify exactly eight patch operations', () => {
-          expect(apiGatewayRequest.properties.patchOperations).to.have.lengthOf(8);
+        it('should specify exactly twelve patch operations', () => {
+          expect(apiGatewayRequest.properties.patchOperations).to.have.lengthOf(12);
         });
 
         it('should enable caching', () => {
