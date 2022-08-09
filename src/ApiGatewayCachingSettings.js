@@ -114,7 +114,6 @@ class ApiGatewayAdditionalEndpointCachingSettings {
     this.method = method;
     this.path = path;
     
-    // This may be difficult considering base paths... testing this.
     this.gatewayResourceName = getApiGatewayResourceNameFor(this.path, this.method);
 
     if (!caching) {
