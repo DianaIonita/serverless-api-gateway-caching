@@ -7,15 +7,15 @@ const getResourcesByName = (name, serverless) => {
   }
 }
 
-const addPathParametersCacheConfig = (settings, serverless) => {
-  for (let endpointSettings of settings.endpointSettings) {
+const applyPathParameterCacheSettings = (settings, serverless) => {
+  for (let endpointSettings of settings) {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
     }
     const method = getResourcesByName(endpointSettings.gatewayResourceName, serverless);
     if (!method) {
       serverless.cli.log(`[serverless-api-gateway-caching] The method ${endpointSettings.gatewayResourceName} couldn't be found in the
-                           compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
+                            compiled CloudFormation template. Caching settings will not be updated for this endpoint.`);
       continue;
     }
     if (!method.Properties.Integration.CacheKeyParameters) {
@@ -57,6 +57,10 @@ const addPathParametersCacheConfig = (settings, serverless) => {
     }
     method.Properties.Integration.CacheNamespace = `${endpointSettings.gatewayResourceName}CacheNS`;
   }
+}
+const addPathParametersCacheConfig = (settings, serverless) => {
+  applyPathParameterCacheSettings(settings.endpointSettings, serverless);
+  applyPathParameterCacheSettings(settings.additionalEndpointSettings, serverless);
 }
 
 module.exports = {

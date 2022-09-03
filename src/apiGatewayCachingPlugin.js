@@ -141,6 +141,26 @@ class ApiGatewayCachingPlugin {
                       enabled: { type: 'boolean' },
                       ttlInSeconds: { type: 'number' },
                       dataEncrypted: { type: 'boolean' },
+                      perKeyInvalidation: {
+                        type: 'object',
+                        properties: {
+                          requireAuthorization: { type: 'boolean' },
+                          handleUnauthorizedRequests: {
+                            type: 'string',
+                            enum: ['Ignore', 'IgnoreWithWarning', 'Fail']
+                          }
+                        }
+                      },
+                      cacheKeyParameters: {
+                        type: 'array',
+                        items: {
+                          type: 'object',
+                          properties: {
+                            name: { type: 'string' },
+                            value: { type: 'string' }
+                          }
+                        }
+                      }
                     }
                   }
                 }
