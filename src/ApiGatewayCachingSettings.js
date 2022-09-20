@@ -88,6 +88,7 @@ class ApiGatewayEndpointCachingSettings {
       if (basePath.endsWith('/')) {
         basePath = basePath.slice(0, -1);
       }
+      this.pathWithoutGlobalBasePath = this.path;
       this.path = basePath.concat(this.path);
     }
 

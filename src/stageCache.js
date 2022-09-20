@@ -106,8 +106,11 @@ const httpEventOf = (lambda, endpointSettings) => {
       }
     });
 
-  return httpEvents.filter(e => (e.path === endpointSettings.path) || (`/${e.path}` === endpointSettings.path))
-    .filter(e => e.method.toUpperCase() == endpointSettings.method.toUpperCase());
+  return httpEvents.filter(e =>
+    (e.path === endpointSettings.path) ||
+    (`/${e.path}` === endpointSettings.path) ||
+    (e.path == endpointSettings.pathWithoutGlobalBasePath) ||
+    (`/${e.path}` == endpointSettings.pathWithoutGlobalBasePath));
 }
 
 const createPatchForEndpoint = (endpointSettings, serverless) => {
