@@ -607,13 +607,29 @@ describe('Creating settings', () => {
         expect(cacheSettings.endpointSettings[0].path).to.equal('/cats');
       });
 
-      it('settings should contain the endpoint path without global base path', () => {
-        expect(cacheSettings.endpointSettings[0].pathWithoutGlobalBasePath).to.equal('/cats');
-      });
-
       it('caching should not be enabled for the http endpoint', () => {
         expect(cacheSettings.endpointSettings[0].cachingEnabled).to.be.false;
       });
+    });
+  });
+
+  describe('when the apiGateway is shared and a basePath is defined', () => {
+    before(() => {
+      endpoint = given.a_serverless_function('list-cats')
+        .withHttpEndpoint('get', '/cat/');
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig({basePath: '/animals'})
+        .withFunction(endpoint);
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('settings should contain the endpoint path including the base path', () => {
+      expect(cacheSettings.endpointSettings[0].path).to.equal('/animals/cat');
+    });
+
+    it('settings should contain the endpoint pathWithoutGlobalBasePath', () => {
+      expect(cacheSettings.endpointSettings[0].pathWithoutGlobalBasePath).to.equal('/cat');
     });
   });
 
