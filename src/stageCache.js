@@ -106,8 +106,13 @@ const httpEventOf = (lambda, endpointSettings) => {
       }
     });
 
-  return httpEvents.filter(e => (e.path === endpointSettings.path) || (`/${e.path}` === endpointSettings.path))
+  const event = httpEvents.filter(e =>
+    (e.path === endpointSettings.path) ||
+    (`/${e.path}` === endpointSettings.path) ||
+    (e.path == endpointSettings.pathWithoutGlobalBasePath) ||
+    (`/${e.path}` == endpointSettings.pathWithoutGlobalBasePath))
     .filter(e => e.method.toUpperCase() == endpointSettings.method.toUpperCase());
+  return event;
 }
 
 const createPatchForEndpoint = (endpointSettings, serverless) => {
@@ -168,7 +173,7 @@ const updateStageFor = async (serverless, params, stage, region) => {
   else {
     paramsInChunks.push(params);
   }
-  
+
   for (let index in paramsInChunks) {
     serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings (${parseInt(index) + 1} of ${paramsInChunks.length}).`);
     await serverless.providers.aws.request('APIGateway', 'updateStage', paramsInChunks[index], stage, region);
