@@ -607,6 +607,10 @@ describe('Creating settings', () => {
         expect(cacheSettings.endpointSettings[0].path).to.equal('/cats');
       });
 
+      it('settings should contain the endpoint path without global base path', () => {
+        expect(cacheSettings.endpointSettings[0].pathWithoutGlobalBasePath).to.equal('/cats');
+      });
+
       it('caching should not be enabled for the http endpoint', () => {
         expect(cacheSettings.endpointSettings[0].cachingEnabled).to.be.false;
       });

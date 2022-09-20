@@ -216,7 +216,49 @@ describe('Updating stage cache settings', () => {
       });
     });
 
-  })
+    describe('and there is a basePath configured', () => {
+      before(async () => {
+        let endpointWithCaching = given.a_serverless_function('get-cat-by-paw-id')
+          .withHttpEndpoint('delete', '/cat/{pawId}', { enabled: true, ttlInSeconds: 45 });
+        serverless = given.a_serverless_instance()
+          .withApiGatewayCachingConfig({ ttlInSeconds: 60, apiGatewayIsShared: true, basePath: '/animals' })
+          .withFunction(endpointWithCaching)
+          .forStage('somestage');
+
+        settings = new ApiGatewayCachingSettings(serverless);
+
+        restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
+
+        await when_updating_stage_cache_settings(settings, serverless);
+
+        requestsToAws = serverless.getRequestsToAws();
+      });
+
+      describe('the request sent to AWS SDK to update stage', () => {
+        before(() => {
+          apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+        });
+
+        it('should contain the REST API ID', () => {
+          expect(apiGatewayRequest.properties.restApiId).to.equal(restApiId);
+        });
+
+        it('should contain the stage name', () => {
+          expect(apiGatewayRequest.properties.stageName).to.equal('somestage');
+        });
+
+        describe('for the endpoint with caching enabled', () => {
+          it('should enable caching', () => {
+            expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+              op: 'replace',
+              path: '/~1cat~1{pawId}/DELETE/caching/enabled',
+              value: 'true'
+            });
+          });
+        });
+      });
+    });
+  });
 
   describe('When api gateway caching is enabled', () => {
     let restApiId;
