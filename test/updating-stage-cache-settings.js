@@ -248,10 +248,10 @@ describe('Updating stage cache settings', () => {
         });
 
         describe('for the endpoint with caching enabled', () => {
-          it('should enable caching', () => {
+          it('includes the base path', () => {
             expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
               op: 'replace',
-              path: '/~1cat~1{pawId}/DELETE/caching/enabled',
+              path: '/~1animals~1cat~1{pawId}/DELETE/caching/enabled',
               value: 'true'
             });
           });
