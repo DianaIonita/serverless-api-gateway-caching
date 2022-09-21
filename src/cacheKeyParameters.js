@@ -7,7 +7,7 @@ const getResourcesByName = (name, serverless) => {
   }
 }
 
-const applyPathParameterCacheSettings = (settings, serverless) => {
+const applyCacheKeyParameterSettings = (settings, serverless) => {
   for (let endpointSettings of settings) {
     if (!endpointSettings.cacheKeyParameters) {
       continue;
@@ -58,11 +58,11 @@ const applyPathParameterCacheSettings = (settings, serverless) => {
     method.Properties.Integration.CacheNamespace = `${endpointSettings.gatewayResourceName}CacheNS`;
   }
 }
-const addPathParametersCacheConfig = (settings, serverless) => {
-  applyPathParameterCacheSettings(settings.endpointSettings, serverless);
-  applyPathParameterCacheSettings(settings.additionalEndpointSettings, serverless);
+const addCacheKeyParametersConfig = (settings, serverless) => {
+  applyCacheKeyParameterSettings(settings.endpointSettings, serverless);
+  applyCacheKeyParameterSettings(settings.additionalEndpointSettings, serverless);
 }
 
 module.exports = {
-  addPathParametersCacheConfig: addPathParametersCacheConfig
+  addCacheKeyParametersConfig: addCacheKeyParametersConfig
 }

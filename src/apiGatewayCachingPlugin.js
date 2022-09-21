@@ -1,7 +1,7 @@
 'use strict';
 
 const ApiGatewayCachingSettings = require('./ApiGatewayCachingSettings');
-const pathParametersCache = require('./pathParametersCache');
+const cacheKeyParameters = require('./cacheKeyParameters');
 const updateStageCacheSettings = require('./stageCache');
 const { restApiExists, outputRestApiIdTo } = require('./restApiId');
 
@@ -37,7 +37,7 @@ class ApiGatewayCachingPlugin {
       return;
     }
 
-    return pathParametersCache.addPathParametersCacheConfig(this.settings, this.serverless);
+    return cacheKeyParameters.addCacheKeyParametersConfig(this.settings, this.serverless);
   }
 
   async updateStage() {
