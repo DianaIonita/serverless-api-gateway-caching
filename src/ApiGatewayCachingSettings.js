@@ -88,6 +88,7 @@ class ApiGatewayEndpointCachingSettings {
       if (basePath.endsWith('/')) {
         basePath = basePath.slice(0, -1);
       }
+      this.pathWithoutGlobalBasePath = this.path;
       this.path = basePath.concat(this.path);
     }
 
@@ -113,11 +114,24 @@ class ApiGatewayAdditionalEndpointCachingSettings {
   constructor(method, path, caching, globalSettings) {
     this.method = method;
     this.path = path;
-    this.cachingEnabled = globalSettings.cachingEnabled ? get(caching, 'enabled', false) : false;
-    if (caching) {
-      this.cacheTtlInSeconds = caching.ttlInSeconds >= 0 ? caching.ttlInSeconds : globalSettings.cacheTtlInSeconds;
+    
+    this.gatewayResourceName = getApiGatewayResourceNameFor(this.path, this.method);
+
+    if (!caching) {
+      this.cachingEnabled = false;
+      return;
     }
-    this.dataEncrypted = get(caching, 'dataEncrypted', globalSettings.dataEncrypted);
+    const cachingConfig = caching;
+    this.cachingEnabled = globalSettings.cachingEnabled ? cachingConfig.enabled : false;
+    this.dataEncrypted = cachingConfig.dataEncrypted || globalSettings.dataEncrypted;
+    this.cacheTtlInSeconds = caching.ttlInSeconds >= 0 ? caching.ttlInSeconds : globalSettings.cacheTtlInSeconds;
+    this.cacheKeyParameters = cachingConfig.cacheKeyParameters;
+
+    if (!cachingConfig.perKeyInvalidation) {
+      this.perKeyInvalidation = globalSettings.perKeyInvalidation;
+    } else {
+      this.perKeyInvalidation = new PerKeyInvalidationSettings(cachingConfig);
+    }
   }
 }
 
@@ -147,13 +161,6 @@ class ApiGatewayCachingSettings {
     this.cacheTtlInSeconds = cachingSettings.ttlInSeconds >= 0 ? cachingSettings.ttlInSeconds : DEFAULT_TTL;
     this.dataEncrypted = cachingSettings.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
 
-    const additionalEndpoints = cachingSettings.additionalEndpoints || [];
-    for (let additionalEndpoint of additionalEndpoints) {
-      const { method, path, caching } = additionalEndpoint;
-
-      this.additionalEndpointSettings.push(new ApiGatewayAdditionalEndpointCachingSettings(method, path, caching, this))
-    }
-
     this.perKeyInvalidation = new PerKeyInvalidationSettings(cachingSettings);
 
     for (let functionName in serverless.service.functions) {
@@ -163,6 +170,12 @@ class ApiGatewayCachingSettings {
           this.endpointSettings.push(new ApiGatewayEndpointCachingSettings(functionName, functionSettings.events[event], this))
         }
       }
+    }
+
+    const additionalEndpoints = cachingSettings.additionalEndpoints || [];
+    for (let additionalEndpoint of additionalEndpoints) {
+      const { method, path, caching } = additionalEndpoint;
+      this.additionalEndpointSettings.push(new ApiGatewayAdditionalEndpointCachingSettings(method, path, caching, this))
     }
   }
 }

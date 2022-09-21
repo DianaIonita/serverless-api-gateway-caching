@@ -53,6 +53,10 @@ functions:
               - name: request.header.Accept-Language
 ```
 
+## Only supports REST API
+
+This plugin only supports REST API, because HTTP API does not support API Gateway Caching at the time of this writing. See [docs](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-vs-rest.html).
+
 ## Time-to-live, encryption, cache invalidation settings
 
 You can use the `apiGatewayCaching` section ("global settings") to quickly configure cache time-to-live, data encryption and per-key cache invalidation for all endpoints. The settings are inherited by each endpoint for which caching is enabled.
@@ -147,8 +151,8 @@ functions:
 
 When the endpoint is hit, API Gateway will create cache entries based on the `pawId` path parameter and the `catName` query string parameter. For instance:
 - `GET /cats/4` will create a cache entry for `pawId=4` and `catName` as `undefined`.
-- `GET /cats/34?catName=Toby` will create a cache entry for `pawId=34` and `catName=Toby`.
-- `GET /cats/72?catName=Dixon&furColour=white` will create a cache entry for `pawId=72` and `catName=Dixon`, but will ignore the `furColour` query string parameter. That means that a subsequent request to `GET /cats/72?catName=Dixon&furColour=black` will return the cached response for `pawId=72` and `catName=Dixon`.
+- `GET /cats/34?catName=Dixon` will create a cache entry for `pawId=34` and `catName=Dixon`.
+- `GET /cats/72?catName=Tsunami&furColour=white` will create a cache entry for `pawId=72` and `catName=Tsunami`, but will ignore the `furColour` query string parameter. That means that a subsequent request to `GET /cats/72?catName=Tsunami&furColour=black` will return the cached response for `pawId=72` and `catName=Tsunami`.
 
 ### Cache key parameters from the path, query string and header
 When an endpoint varies its responses based on values found in the `path`, `query string` or `header`, you can specify all the parameter names as cache key parameters:
@@ -385,6 +389,53 @@ custom:
           enabled: true # it must be specifically enabled
           ttlInSeconds: 1200 # if not set, inherited from global settings
           dataEncrypted: true # if not set, inherited from global settings
+```
+
+## Configuring caching when the endpoint bypasses lambda and talks to a service like DynamoDb
+
+This example uses the `serverless-apigateway-service-proxy` plugin which creates the path `/dynamodb?id=cat_id`.
+Caching can be configured using the `additionalEndpoints` feature. The method and path must match the ones defined as a service proxy. It also supports cache key parameters.
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+  - serverless-apigateway-service-proxy
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+    additionalEndpoints:
+      - method: GET
+        path: /dynamodb
+        caching:
+          enabled: true
+          ttlInSeconds: 120
+          cacheKeyParameters:
+            - name: request.querystring.id
+
+  apiGatewayServiceProxies:
+    - dynamodb:
+        path: /dynamodb
+        method: get
+        tableName: { Ref: 'MyDynamoCatsTable' }
+        hashKey:
+          queryStringParam: id # use query string parameter
+          attributeType: S
+        action: GetItem
+        cors: true
+
+resources:
+  Resources:
+    MyDynamoCatsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: my-dynamo-cats
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
 ```
 
 ## More Examples

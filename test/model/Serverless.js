@@ -67,6 +67,20 @@ class Serverless {
 
   withAdditionalEndpoints(additionalEndpoints) {
     this.service.custom.apiGatewayCaching.additionalEndpoints = additionalEndpoints;
+    // when a function with an http endpoint is defined, serverless creates an ApiGatewayRestApi resource
+    this.service.provider.compiledCloudFormationTemplate.Resources['ApiGatewayRestApi'] = {};
+
+    for (const additionalEndpointToAdd of additionalEndpoints) {
+
+      let { additionalEndpoint, methodResourceName } = addAdditionalEndpointToCompiledCloudFormationTemplate(additionalEndpointToAdd, this);
+      if (!this._additionalEndpointsToResourcesMapping) {
+        this._additionalEndpointsToResourcesMapping = {}
+      }
+      this._additionalEndpointsToResourcesMapping[JSON.stringify(additionalEndpoint)] = {
+        additionalEndpoint,
+        methodResourceName
+      }
+    }
     return this;
   }
 
@@ -84,6 +98,11 @@ class Serverless {
   }
 
   getMethodResourceForMethodName(methodResourceName) {
+    return this.service.provider.compiledCloudFormationTemplate.Resources[methodResourceName];
+  }
+
+  getMethodResourceForAdditionalEndpoint(additionalEndpoint) {
+    let { methodResourceName } = this._additionalEndpointsToResourcesMapping[JSON.stringify(additionalEndpoint)];
     return this.service.provider.compiledCloudFormationTemplate.Resources[methodResourceName];
   }
 
@@ -189,6 +208,19 @@ const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverl
 
   Resources[methodResourceName] = methodTemplate
   return { functionResourceName, methodResourceName }
+}
+
+const addAdditionalEndpointToCompiledCloudFormationTemplate = (additionalEndpoint, serverless) => {
+  const { path, method } = additionalEndpoint;
+  methodResourceName = createMethodResourceNameFor(path, method);
+  
+  let methodTemplate = clone(require('./templates/aws-api-gateway-method'));
+  
+  methodResourceName = createMethodResourceNameFor(path, method);
+  
+  let { Resources } = serverless.service.provider.compiledCloudFormationTemplate;
+  Resources[methodResourceName] = methodTemplate
+  return { additionalEndpoint, methodResourceName }
 }
 
 module.exports = Serverless;
