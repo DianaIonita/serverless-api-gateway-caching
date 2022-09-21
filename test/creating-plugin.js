@@ -12,7 +12,7 @@ describe('Creating plugin', () => {
         thereIsARestApi: false,
         expectedLogMessage: '[serverless-api-gateway-caching] No REST API found. Caching settings will not be updated.',
         expectedToOutputRestApiId: false,
-        expectedToAddPathParametersCacheConfig: false
+        expectedToAddCacheKeyParametersConfig: false
       },
       {
         description: 'there is a REST API and caching is enabled',
@@ -20,7 +20,7 @@ describe('Creating plugin', () => {
         thereIsARestApi: true,
         expectedLogMessage: undefined,
         expectedToOutputRestApiId: true,
-        expectedToAddPathParametersCacheConfig: true,
+        expectedToAddCacheKeyParametersConfig: true,
       },
       {
         description: 'there is a REST API and caching is disabled',
@@ -28,22 +28,22 @@ describe('Creating plugin', () => {
         thereIsARestApi: true,
         expectedLogMessage: undefined,
         expectedToOutputRestApiId: true,
-        expectedToAddPathParametersCacheConfig: false,
+        expectedToAddCacheKeyParametersConfig: false,
       }
     ];
 
     for (let scenario of scenarios) {
       describe(`and ${scenario.description}`, () => {
-        let logCalledWith, outputRestApiIdCalled = false, addPathParametersCacheConfigCalled = false;
+        let logCalledWith, outputRestApiIdCalled = false, addCacheKeyParametersConfigCalled = false;
         const serverless = { cli: { log: (message) => { logCalledWith = message } } };
         const restApiIdStub = {
           restApiExists: () => scenario.thereIsARestApi,
           outputRestApiIdTo: () => outputRestApiIdCalled = true
         };
-        const pathParametersCacheStub = {
-          addPathParametersCacheConfig: () => addPathParametersCacheConfigCalled = true
+        const cacheKeyParametersStub = {
+          addCacheKeyParametersConfig: () => addCacheKeyParametersConfigCalled = true
         }
-        const ApiGatewayCachingPlugin = proxyquire('../src/apiGatewayCachingPlugin', { './restApiId': restApiIdStub, './pathParametersCache': pathParametersCacheStub });
+        const ApiGatewayCachingPlugin = proxyquire('../src/apiGatewayCachingPlugin', { './restApiId': restApiIdStub, './cacheKeyParameters': cacheKeyParametersStub });
 
         before(() => {
           const plugin = new ApiGatewayCachingPlugin(serverless, {});
@@ -59,8 +59,8 @@ describe('Creating plugin', () => {
           expect(outputRestApiIdCalled).to.equal(scenario.expectedToOutputRestApiId);
         });
 
-        it(`is expected to add path parameters to cache config: ${scenario.expectedToAddPathParametersCacheConfig}`, () => {
-          expect(addPathParametersCacheConfigCalled).to.equal(scenario.expectedToAddPathParametersCacheConfig);
+        it(`is expected to add path parameters to cache config: ${scenario.expectedToAddCacheKeyParametersConfig}`, () => {
+          expect(addCacheKeyParametersConfigCalled).to.equal(scenario.expectedToAddCacheKeyParametersConfig);
         });
       });
     }
