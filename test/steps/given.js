@@ -15,15 +15,15 @@ const a_rest_api_id = () => {
   return chance.guid();
 }
 
-const a_rest_api_id_for_deployment = (serverless, settings) => {
+const a_rest_api_id_for_deployment = (serverless) => {
   let restApiId = a_rest_api_id();
-  serverless.setRestApiId(restApiId, settings);
+  serverless = serverless.withRestApiId(restApiId);
 
   return restApiId;
 }
 
 const the_rest_api_id_is_not_set_for_deployment = (serverless, settings) => {
-  serverless.setRestApiId(undefined, settings);
+  serverless = serverless.withRestApiId(undefined);
 }
 
 const endpoints_with_caching_enabled = (endpointCount) => {

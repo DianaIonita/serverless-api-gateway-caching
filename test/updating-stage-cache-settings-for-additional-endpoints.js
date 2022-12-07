@@ -1,4 +1,5 @@
 const given = require('../test/steps/given');
+const when = require('../test/steps/when');
 const ApiGatewayCachingSettings = require('../src/ApiGatewayCachingSettings');
 const updateStageCacheSettings = require('../src/stageCache');
 const expect = require('chai').expect;
@@ -22,15 +23,15 @@ describe('Updating stage cache settings for additional endpoints defined as Clou
             caching: { enabled: false }
           })];
 
+        restApiId = given.a_rest_api_id();
         serverless = given.a_serverless_instance()
           .withApiGatewayCachingConfig()
           .withAdditionalEndpoints(additionalEndpoints)
+          .withRestApiId(restApiId)
           .forStage('somestage');
         settings = new ApiGatewayCachingSettings(serverless);
 
-        restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
-
-        await when_updating_stage_cache_settings(settings, serverless);
+        await when.updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
       });
@@ -123,7 +124,3 @@ describe('Updating stage cache settings for additional endpoints defined as Clou
     });
   });
 });
-
-const when_updating_stage_cache_settings = async (settings, serverless) => {
-  return await updateStageCacheSettings(settings, serverless);
-}
