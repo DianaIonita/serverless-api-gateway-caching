@@ -63,6 +63,8 @@ You can use the `apiGatewayCaching` section ("global settings") to quickly confi
 
 Cache `clusterSize` can only be specified under global settings, because there's only one cluster per API Gateway stage.
 
+The setting `endpointsInheritCloudWatchSettingsFromStage` makes sure that settings like `Log Level` and whether to `Enable detailed CloudWatch metrics` are copied over from the stage to each endpoint's settings. It is `true` by default.
+
 ```yml
 plugins:
   - serverless-api-gateway-caching
@@ -76,6 +78,7 @@ custom:
     perKeyInvalidation:
       requireAuthorization: true # default is true
       handleUnauthorizedRequests: Ignore # default is "IgnoreWithWarning".
+    endpointsInheritCloudWatchSettingsFromStage: true # default is true
 ```
 
 ### Configuring per-endpoint settings
@@ -102,6 +105,7 @@ functions:
             enabled: true
             ttlInSeconds: 3600 # overrides the global setting for ttlInSeconds
             dataEncrypted: true # default is false
+            inheritCloudWatchSettingsFromStage: false # default is true
             perKeyInvalidation:
               requireAuthorization: true # default is true
               handleUnauthorizedRequests: Fail # default is "IgnoreWithWarning"

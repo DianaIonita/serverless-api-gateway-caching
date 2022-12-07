@@ -1,12 +1,14 @@
 class Serverless {
   constructor(serviceName) {
     this._logMessages = [];
-    this._recordedAwsRequests = []
+    this._recordedAwsRequests = [];
+    this._mockedRequestsToAws = [];
     this.cli = {
       log: (logMessage) => {
         this._logMessages.push(logMessage);
       }
     };
+
     this.service = {
       service: serviceName,
       custom: {},
@@ -18,7 +20,41 @@ class Serverless {
       getFunction(functionName) {
         return this.functions[functionName];
       }
+    };
+
+    this.providers = {
+      aws: {
+        naming: {
+          getStackName: (stage) => {
+            if (stage != this.service.provider.stage) {
+              throw new Error('[Serverless Test Model] Something went wrong getting the Stack Name');
+            }
+            return 'serverless-stack-name';
+          }
+        },
+        request: async (awsService, method, properties, stage, region) => {
+          this._recordedAwsRequests.push({ awsService, method, properties, stage, region });
+
+          if (awsService == 'APIGateway' && method == 'updateStage') {
+            return;
+          }
+
+          const params = { awsService, method, properties, stage, region };
+          const mockedFunction = this._mockedRequestsToAws[mockedRequestKeyFor(params)];
+          if (!mockedFunction) {
+            throw new Error(`[Serverless Test Model] No mock found for request to AWS { awsService = ${awsService}, method = ${method}, properties = ${JSON.stringify(properties)}, stage = ${stage}, region = ${region} }`)
+          }
+          const mockedResponse = mockedFunction(params);
+          if (!mockedFunction) {
+            throw new Error(`[Serverless Test Model] No mock response found for request to AWS { awsService = ${awsService}, method = ${method}, properties = ${JSON.stringify(properties)}, stage = ${stage}, region = ${region} }`)
+          }
+          return mockedResponse;
+        }
+      }
     }
+
+    // add default mock for getStage
+    this._mockedRequestsToAws[mockedRequestKeyFor({ awsService: 'APIGateway', method: 'getStage' })] = defaultMockedRequestToAWS;
   }
 
   forStage(stage) {
@@ -31,7 +67,8 @@ class Serverless {
     return this;
   }
 
-  withApiGatewayCachingConfig({ cachingEnabled = true, clusterSize = '0.5', ttlInSeconds = 45, perKeyInvalidation, dataEncrypted, apiGatewayIsShared, restApiId, basePath } = {}) {
+  withApiGatewayCachingConfig({ cachingEnabled = true, clusterSize = '0.5', ttlInSeconds = 45, perKeyInvalidation, dataEncrypted, apiGatewayIsShared,
+    restApiId, basePath, endpointsInheritCloudWatchSettingsFromStage } = {}) {
     this.service.custom.apiGatewayCaching = {
       enabled: cachingEnabled,
       apiGatewayIsShared,
@@ -40,7 +77,8 @@ class Serverless {
       clusterSize,
       ttlInSeconds,
       perKeyInvalidation,
-      dataEncrypted
+      dataEncrypted,
+      endpointsInheritCloudWatchSettingsFromStage
     };
     return this;
   }
@@ -84,6 +122,30 @@ class Serverless {
     return this;
   }
 
+  withStageSettingsForCloudWatchMetrics({ loggingLevel, dataTraceEnabled, metricsEnabled } = {}) {
+    const expectedAwsService = 'APIGateway';
+    const expectedMethod = 'getStage';
+    const mockedRequestToAws = ({ awsService, method, properties, stage, region }) => {
+      if (awsService == 'APIGateway'
+        && method == 'getStage'
+        && properties.restApiId == this._restApiId
+        && properties.stageName == this.service.provider.stage
+        && region == this.service.provider.region) {
+        return {
+          methodSettings: {
+            ['*/*']: {
+              loggingLevel,
+              dataTraceEnabled,
+              metricsEnabled
+            }
+          }
+        };
+      }
+    };
+    this._mockedRequestsToAws[mockedRequestKeyFor({ awsService: expectedAwsService, method: expectedMethod })] = mockedRequestToAws;
+    return this;
+  }
+
   withProviderRestApiId(restApiId) {
     if (!this.service.provider.apiGateway) {
       this.service.provider.apiGateway = {}
@@ -106,37 +168,29 @@ class Serverless {
     return this.service.provider.compiledCloudFormationTemplate.Resources[methodResourceName];
   }
 
-  setRestApiId(restApiId, settings) {
-    this.providers = {
-      aws: {
-        naming: {
-          getStackName: (stage) => {
-            if (stage != settings.stage) {
-              throw new Error('[Serverless Test Model] Something went wrong getting the Stack Name');
-            }
-            return 'serverless-stack-name';
-          }
-        },
-        request: async (awsService, method, properties, stage, region) => {
-          this._recordedAwsRequests.push({ awsService, method, properties, stage, region });
-
-          if (awsService == 'CloudFormation'
-            && method == 'describeStacks'
-            && properties.StackName == 'serverless-stack-name'
-            && stage == settings.stage
-            && region == settings.region) {
-            return {
-              Stacks: [{
-                Outputs: [{
-                  OutputKey: 'RestApiIdForApigCaching',
-                  OutputValue: restApiId
-                }]
-              }]
-            };
-          }
-        }
+  withRestApiId(restApiId) {
+    this._restApiId = restApiId;
+    const expectedAwsService = 'CloudFormation';
+    const expectedMethod = 'describeStacks';
+    const mockedRequestToAws = ({ awsService, method, properties, stage, region }) => {
+      if (awsService == 'CloudFormation'
+        && method == 'describeStacks'
+        && properties.StackName == 'serverless-stack-name'
+        && stage == this.service.provider.stage
+        && region == this.service.provider.region) {
+        const result = {
+          Stacks: [{
+            Outputs: [{
+              OutputKey: 'RestApiIdForApigCaching',
+              OutputValue: restApiId
+            }]
+          }]
+        };
+        return result;
       }
-    }
+    };
+    this._mockedRequestsToAws[mockedRequestKeyFor({ awsService: expectedAwsService, method: expectedMethod })] = mockedRequestToAws;
+    return this;
   }
 
   getRequestsToAws() {
@@ -213,14 +267,33 @@ const addFunctionToCompiledCloudFormationTemplate = (serverlessFunction, serverl
 const addAdditionalEndpointToCompiledCloudFormationTemplate = (additionalEndpoint, serverless) => {
   const { path, method } = additionalEndpoint;
   methodResourceName = createMethodResourceNameFor(path, method);
-  
+
   let methodTemplate = clone(require('./templates/aws-api-gateway-method'));
-  
+
   methodResourceName = createMethodResourceNameFor(path, method);
-  
+
   let { Resources } = serverless.service.provider.compiledCloudFormationTemplate;
   Resources[methodResourceName] = methodTemplate
   return { additionalEndpoint, methodResourceName }
 }
+
+const mockedRequestKeyFor = ({ awsService, method }) => {
+  return `${awsService}-${method}`;
+}
+
+const defaultMockedRequestToAWS = ({ awsService, method, properties, stage, region }) => {
+  if (awsService == 'APIGateway'
+    && method == 'getStage') {
+    return {
+      methodSettings: {
+        ['*/*']: {
+          loggingLevel: 'not set',
+          dataTraceEnabled: 'not set',
+          metricsEnabled: 'not set'
+        }
+      }
+    };
+  }
+};
 
 module.exports = Serverless;

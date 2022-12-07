@@ -5,6 +5,7 @@ const DEFAULT_CACHE_CLUSTER_SIZE = '0.5';
 const DEFAULT_DATA_ENCRYPTED = false;
 const DEFAULT_TTL = 3600;
 const DEFAULT_UNAUTHORIZED_INVALIDATION_REQUEST_STRATEGY = IgnoreWithWarning;
+const DEFAULT_INHERIT_CLOUDWATCH_SETTINGS_FROM_STAGE = true;
 
 const mapUnauthorizedRequestStrategy = strategy => {
   if (!strategy) {
@@ -92,6 +93,13 @@ class ApiGatewayEndpointCachingSettings {
       this.path = basePath.concat(this.path);
     }
 
+    if (event.http.caching && event.http.caching.inheritCloudWatchSettingsFromStage != undefined) {
+      this.inheritCloudWatchSettingsFromStage = event.http.caching.inheritCloudWatchSettingsFromStage;
+    }
+    else {
+      this.inheritCloudWatchSettingsFromStage = globalSettings.endpointsInheritCloudWatchSettingsFromStage;
+    }
+
     if (!event.http.caching) {
       this.cachingEnabled = false;
       return;
@@ -114,7 +122,7 @@ class ApiGatewayAdditionalEndpointCachingSettings {
   constructor(method, path, caching, globalSettings) {
     this.method = method;
     this.path = path;
-    
+
     this.gatewayResourceName = getApiGatewayResourceNameFor(this.path, this.method);
 
     if (!caching) {
@@ -162,6 +170,9 @@ class ApiGatewayCachingSettings {
     this.dataEncrypted = cachingSettings.dataEncrypted || DEFAULT_DATA_ENCRYPTED;
 
     this.perKeyInvalidation = new PerKeyInvalidationSettings(cachingSettings);
+
+    this.endpointsInheritCloudWatchSettingsFromStage = cachingSettings.endpointsInheritCloudWatchSettingsFromStage == undefined ?
+      DEFAULT_INHERIT_CLOUDWATCH_SETTINGS_FROM_STAGE : cachingSettings.endpointsInheritCloudWatchSettingsFromStage;
 
     for (let functionName in serverless.service.functions) {
       let functionSettings = serverless.service.functions[functionName];

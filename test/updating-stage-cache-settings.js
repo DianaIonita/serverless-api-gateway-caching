@@ -1,8 +1,7 @@
-const APP_ROOT = '..';
-const given = require(`${APP_ROOT}/test/steps/given`);
-const ApiGatewayCachingSettings = require(`${APP_ROOT}/src/ApiGatewayCachingSettings`);
-const updateStageCacheSettings = require(`${APP_ROOT}/src/stageCache`);
-const UnauthorizedCacheControlHeaderStrategy = require(`${APP_ROOT}/src/UnauthorizedCacheControlHeaderStrategy`);
+const given = require('../test/steps/given');
+const when = require('../test/steps/when');
+const ApiGatewayCachingSettings = require('../src/ApiGatewayCachingSettings');
+const UnauthorizedCacheControlHeaderStrategy = require('../src/UnauthorizedCacheControlHeaderStrategy');
 const expect = require('chai').expect;
 
 describe('Updating stage cache settings', () => {
@@ -13,7 +12,7 @@ describe('Updating stage cache settings', () => {
     before(async () => {
       serverless = given.a_serverless_instance();
       settings = new ApiGatewayCachingSettings(serverless);
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
     });
@@ -34,7 +33,7 @@ describe('Updating stage cache settings', () => {
 
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
     });
@@ -89,7 +88,7 @@ describe('Updating stage cache settings', () => {
 
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-        await when_updating_stage_cache_settings(settings, serverless);
+        await when.updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
       });
@@ -117,7 +116,7 @@ describe('Updating stage cache settings', () => {
 
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-        await when_updating_stage_cache_settings(settings, serverless);
+        await when.updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
       });
@@ -229,7 +228,7 @@ describe('Updating stage cache settings', () => {
 
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-        await when_updating_stage_cache_settings(settings, serverless);
+        await when.updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
       });
@@ -272,7 +271,7 @@ describe('Updating stage cache settings', () => {
 
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-        await when_updating_stage_cache_settings(settings, serverless);
+        await when.updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
       });
@@ -350,7 +349,7 @@ describe('Updating stage cache settings', () => {
 
         restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-        await when_updating_stage_cache_settings(settings, serverless);
+        await when.updating_stage_cache_settings(settings, serverless);
 
         requestsToAws = serverless.getRequestsToAws();
       });
@@ -583,7 +582,7 @@ describe('Updating stage cache settings', () => {
 
             restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-            await when_updating_stage_cache_settings(settings, serverless);
+            await when.updating_stage_cache_settings(settings, serverless);
 
             requestsToAws = serverless.getRequestsToAws();
             apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
@@ -616,7 +615,7 @@ describe('Updating stage cache settings', () => {
 
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
       apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
@@ -663,7 +662,7 @@ describe('Updating stage cache settings', () => {
 
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
       apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
@@ -694,7 +693,7 @@ describe('Updating stage cache settings', () => {
 
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
       apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
@@ -722,7 +721,7 @@ describe('Updating stage cache settings', () => {
 
       restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
 
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
       apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
@@ -744,8 +743,10 @@ describe('Updating stage cache settings', () => {
       let endpoints = given.endpoints_with_caching_enabled(23);
 
       expectedStageName = 'somestage';
+      restApiId = given.a_rest_api_id();
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig()
+        .withApiGatewayCachingConfig({ endpointsInheritCloudWatchSettingsFromStage: false })
+        .withRestApiId(restApiId)
         .forStage(expectedStageName);
       for (let endpoint of endpoints) {
         serverless = serverless.withFunction(endpoint)
@@ -753,9 +754,7 @@ describe('Updating stage cache settings', () => {
 
       settings = new ApiGatewayCachingSettings(serverless);
 
-      restApiId = await given.a_rest_api_id_for_deployment(serverless, settings);
-
-      await when_updating_stage_cache_settings(settings, serverless);
+      await when.updating_stage_cache_settings(settings, serverless);
 
       requestsToAws = serverless.getRequestsToAws();
       requestsToAwsToUpdateStage = requestsToAws.filter(r => r.method == 'updateStage');
@@ -789,7 +788,3 @@ describe('Updating stage cache settings', () => {
     });
   });
 });
-
-const when_updating_stage_cache_settings = async (settings, serverless) => {
-  return await updateStageCacheSettings(settings, serverless);
-}
