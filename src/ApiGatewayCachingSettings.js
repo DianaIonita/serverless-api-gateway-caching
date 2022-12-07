@@ -94,7 +94,7 @@ class ApiGatewayEndpointCachingSettings {
     }
 
     if (event.http.caching && event.http.caching.inheritCloudWatchSettingsFromStage != undefined) {
-      this.inheritCloudWatchSettingsFromStage = event.http.caching?.inheritCloudWatchSettingsFromStage;
+      this.inheritCloudWatchSettingsFromStage = event.http.caching.inheritCloudWatchSettingsFromStage;
     }
     else {
       this.inheritCloudWatchSettingsFromStage = globalSettings.endpointsInheritCloudWatchSettingsFromStage;
