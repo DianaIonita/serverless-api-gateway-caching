@@ -24,22 +24,22 @@ describe('Configuring a default base path', () => {
       }
     ];
     let settings;
-    
+
     for (scenario of scenarios) {
       describe(`and ${scenario.description}`, () => {
         before(() => {
           const endpoint = given
             .a_serverless_function(functionName)
             .withHttpEndpoint('get', endpointPath, { enabled: true });
-            
+
           const serverless = given
             .a_serverless_instance(serviceName)
             .withApiGatewayCachingConfig({ basePath: scenario.basePath })
             .withFunction(endpoint);
-    
+
           settings = new ApiGatewayCachingSettings(serverless);
         });
-    
+
         it('should be prepended to each endpoint and form a valid path', () => {
           expect(path_of(functionName, settings)).to.equal(`/animals${endpointPath}`);
         });
@@ -52,24 +52,24 @@ describe('Configuring a default base path', () => {
       const endpoint = given
         .a_serverless_function(functionName)
         .withHttpEndpoint('get', endpointPath, { enabled: true });
-      
+
       const serverless = given
         .a_serverless_instance(serviceName)
         .withApiGatewayCachingConfig()
         .withFunction(endpoint);
 
-        settings = new ApiGatewayCachingSettings(serverless);
+      settings = new ApiGatewayCachingSettings(serverless);
     });
 
-    it('should just use the endpoint path', () => {      
+    it('should just use the endpoint path', () => {
       expect(path_of(functionName, settings)).to.equal(endpointPath);
     });
   });
 });
 
 const path_of = (functionName, settings) => {
-    return settings
-      .endpointSettings
-      .find(x => x.functionName === functionName)
-      .path;
+  return settings
+    .endpointSettings
+    .find(x => x.functionName === functionName)
+    .path;
 }

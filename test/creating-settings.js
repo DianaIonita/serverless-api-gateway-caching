@@ -70,6 +70,20 @@ describe('Creating settings', () => {
     });
   });
 
+  describe('when the endpointsInheritCloudWatchSettingsFromStage toggle is omitted from Api Gateway caching settings', () => {
+    before(() => {
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig();
+      serverless.service.custom.apiGatewayCaching.endpointsInheritCloudWatchSettingsFromStage = undefined;
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('should set endpointsInheritCloudWatchSettingsFromStage to true by default', () => {
+      expect(cacheSettings.endpointsInheritCloudWatchSettingsFromStage).to.equal(true);
+    });
+  });
+
   describe('when settings are defined for Api Gateway caching', () => {
     let scenarios = [
       {
@@ -618,7 +632,7 @@ describe('Creating settings', () => {
       endpoint = given.a_serverless_function('list-cats')
         .withHttpEndpoint('get', '/cat/');
       serverless = given.a_serverless_instance()
-        .withApiGatewayCachingConfig({basePath: '/animals'})
+        .withApiGatewayCachingConfig({ basePath: '/animals' })
         .withFunction(endpoint);
 
       cacheSettings = createSettingsFor(serverless);
@@ -743,6 +757,30 @@ describe('Creating settings', () => {
 
     it('should inherit cache ttl from global settings', () => {
       expect(cacheSettings.additionalEndpointSettings[0].cacheTtlInSeconds).to.equal(60);
+    });
+  });
+
+  describe('when caching config for a http endpoint sets whether to inherit CloudWatch settings from stage', () => {
+    before(() => {
+      listEndpoint = given.a_serverless_function('list-cats')
+        .withHttpEndpoint('get', '/');
+      getEndpoint = given.a_serverless_function('get-cat')
+        .withHttpEndpoint('get', '/cat/{id}', { inheritCloudWatchSettingsFromStage: false });
+      serverless = given.a_serverless_instance()
+        .withApiGatewayCachingConfig()
+        .withFunction(listEndpoint)
+        .withFunction(getEndpoint)
+      serverless.service.custom.apiGatewayCaching.endpointsInheritCloudWatchSettingsFromStage = true;
+
+      cacheSettings = createSettingsFor(serverless);
+    });
+
+    it('endpoint settings for whether to inherit CloudWatch settings from stage are correct', () => {
+      expect(cacheSettings.endpointSettings[0].path).to.equal('/');
+      // propagates from global caching settings
+      expect(cacheSettings.endpointSettings[0].inheritCloudWatchSettingsFromStage).to.equal(true);
+      expect(cacheSettings.endpointSettings[1].path).to.equal('/cat/{id}');
+      expect(cacheSettings.endpointSettings[1].inheritCloudWatchSettingsFromStage).to.equal(false);
     });
   });
 });
