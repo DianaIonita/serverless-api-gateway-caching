@@ -122,6 +122,25 @@ class Serverless {
     return this;
   }
 
+  withoutStageSettingsForCloudWatchMetrics() {
+    const expectedAwsService = 'APIGateway';
+    const expectedMethod = 'getStage';
+    const mockedRequestToAws = ({ awsService, method, properties, stage, region }) => {
+      if (awsService == 'APIGateway'
+        && method == 'getStage'
+        && properties.restApiId == this._restApiId
+        && properties.stageName == this.service.provider.stage
+        && region == this.service.provider.region) {
+        return {
+          methodSettings: {
+          }
+        };
+      }
+    };
+    this._mockedRequestsToAws[mockedRequestKeyFor({ awsService: expectedAwsService, method: expectedMethod })] = mockedRequestToAws;
+    return this;
+  }
+
   withStageSettingsForCloudWatchMetrics({ loggingLevel, dataTraceEnabled, metricsEnabled } = {}) {
     const expectedAwsService = 'APIGateway';
     const expectedMethod = 'getStage';
