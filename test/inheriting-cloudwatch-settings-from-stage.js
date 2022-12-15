@@ -78,4 +78,94 @@ describe('Inheriting CloudWatch settings from stage', () => {
       });
     });
   });
+
+  describe('when CloudWatch settings for the stage are not defined', () => {
+    before(async () => {
+      let restApiId = given.a_rest_api_id();
+      let endpointWithInheritedCwSettings = given.a_serverless_function('get-my-cat')
+        .withHttpEndpoint('get', '/', { inheritCloudWatchSettingsFromStage: true })
+      serverless = given.a_serverless_instance()
+        .forStage('somestage')
+        .withRestApiId(restApiId)
+        .withApiGatewayCachingConfig({ endpointsInheritCloudWatchSettingsFromStage: true })
+        .withFunction(endpointWithInheritedCwSettings)
+        .withoutStageSettingsForCloudWatchMetrics();
+      settings = new ApiGatewayCachingSettings(serverless);
+
+      await when.updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
+    });
+
+    describe('the request sent to AWS SDK to update stage', () => {
+      before(() => {
+        apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+      });
+
+      it('should not set the value of logging/logLevel', () => {
+        let operation = apiGatewayRequest.properties.patchOperations
+          .find(o => o.path == '/~1/GET/logging/loglevel');
+        expect(operation).to.not.exist;
+      });
+
+      it('should not set the value of logging/dataTrace', () => {
+        let operation = apiGatewayRequest.properties.patchOperations
+          .find(o => o.path == '/~1/GET/logging/dataTrace');
+        expect(operation).to.not.exist;
+      });
+
+      it('should not set the value of metrics/enabled', () => {
+        let operation = apiGatewayRequest.properties.patchOperations
+          .find(o => o.path == '/~1/GET/metrics/enabled');
+        expect(operation).to.not.exist;
+      });
+    });
+  });
+
+  describe('when CloudWatch logging level for the stage is not defined', () => {
+    before(async () => {
+      let restApiId = given.a_rest_api_id();
+      let endpointWithInheritedCwSettings = given.a_serverless_function('get-my-cat')
+        .withHttpEndpoint('get', '/', { inheritCloudWatchSettingsFromStage: true })
+      serverless = given.a_serverless_instance()
+        .forStage('somestage')
+        .withRestApiId(restApiId)
+        .withApiGatewayCachingConfig({ endpointsInheritCloudWatchSettingsFromStage: true })
+        .withFunction(endpointWithInheritedCwSettings)
+        .withStageSettingsForCloudWatchMetrics({ dataTraceEnabled: false, metricsEnabled: true });
+      settings = new ApiGatewayCachingSettings(serverless);
+
+      await when.updating_stage_cache_settings(settings, serverless);
+
+      requestsToAws = serverless.getRequestsToAws();
+    });
+
+    describe('the request sent to AWS SDK to update stage', () => {
+      before(() => {
+        apiGatewayRequest = requestsToAws.find(r => r.awsService == apiGatewayService && r.method == updateStageMethod);
+      });
+
+      it('should not set the value of logging/logLevel', () => {
+        let operation = apiGatewayRequest.properties.patchOperations
+          .find(o => o.path == '/~1/GET/logging/loglevel');
+        expect(operation).to.not.exist;
+      });
+
+      it('should set the value of logging/dataTrace the same as the stage value of logging/dataTraceEnabled', () => {
+        expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+          op: 'replace',
+          path: '/~1/GET/logging/dataTrace',
+          value: 'false'
+        });
+      });
+
+      it('should set the value of metrics/enabled the same as the stage value of metrics/enabled', () => {
+        expect(apiGatewayRequest.properties.patchOperations).to.deep.include({
+          op: 'replace',
+          path: '/~1/GET/metrics/enabled',
+          value: 'true'
+        });
+      });
+    });
+  });
 });

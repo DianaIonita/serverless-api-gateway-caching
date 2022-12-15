@@ -87,12 +87,14 @@ const createPatchForMethod = (path, method, endpointSettings, stageState) => {
     }
   }
 
-  if (endpointSettings.inheritCloudWatchSettingsFromStage) {
-    patch.push({
-      op: 'replace',
-      path: `/${patchPath}/logging/loglevel`,
-      value: stageState.methodSettings['*/*'].loggingLevel,
-    });
+  if (endpointSettings.inheritCloudWatchSettingsFromStage && stageState.methodSettings['*/*']) {
+    if (stageState.methodSettings['*/*'].loggingLevel) {
+      patch.push({
+        op: 'replace',
+        path: `/${patchPath}/logging/loglevel`,
+        value: stageState.methodSettings['*/*'].loggingLevel,
+      });
+    }
     patch.push({
       op: 'replace',
       path: `/${patchPath}/logging/dataTrace`,
