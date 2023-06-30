@@ -73,7 +73,7 @@ describe('Creating plugin', () => {
         thereIsARestApi: false,
         expectedLogMessage: '[serverless-api-gateway-caching] No REST API found. Caching settings will not be updated.',
         expectedToUpdateStageCache: false,
-        expectedToHaveSettings: false
+        expectedToHaveSettings: true
       },
       {
         description: 'there is a REST API',
