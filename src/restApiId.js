@@ -41,8 +41,8 @@ const outputRestApiIdTo = (serverless) => {
 };
 
 const getAlreadyDeployedStack = async (serverless, settings) => {
-  const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
   try {
+    const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
     const stack = await serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
       settings.stage,
       settings.region
