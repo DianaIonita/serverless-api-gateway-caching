@@ -54,7 +54,7 @@ describe('Configuring path parameters for additional endpoints defined as CloudF
             for (let parameter of cacheKeyParameters) {
                 expect(apiGatewayMethod.Properties.RequestParameters)
                     .to.deep.include({
-                        [`method.${parameter.name}`]: {}
+                        [`method.${parameter.name}`]: false
                     });
             }
         });
