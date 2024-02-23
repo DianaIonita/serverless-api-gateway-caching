@@ -267,6 +267,41 @@ functions:
                 mappedFrom: method.request.body.cities[0].petCount
 ```
 
+### Requiring cache key parameters
+When adding a cache key parameter you can specify whether the parameter is required for the function.
+
+By default cache key parameters are **not** required.
+
+In this example:
+
+```yml
+plugins:
+  - serverless-api-gateway-caching
+
+custom:
+  apiGatewayCaching:
+    enabled: true
+
+functions:
+  get-cats:
+    handler: rest_api/cat/get/handler.handle
+    events:
+      - http:
+          path: /cats
+          method: get
+          caching:
+            enabled: true
+            cacheKeyParameters:
+              - name: request.querystring.breed
+              - name: request.querystring.furColour
+                required: false
+              - name: request.header.Accept-Language
+                required: true
+```
+
+- The `breed` and `furColour` are **optional**.
+- The `Accept-Language` header is **required**. It must be included with the request or the function will fail.
+
 ### Limitations
 Cache key parameters coming from multi-value query strings and multi-value headers are currently not supported.
 
