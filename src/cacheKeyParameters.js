@@ -26,9 +26,10 @@ const applyCacheKeyParameterSettings = (settings, serverless) => {
     }
 
     for (let cacheKeyParameter of endpointSettings.cacheKeyParameters) {
+      let isRequired = cacheKeyParameter.required || false;
       if (!cacheKeyParameter.mappedFrom) {
         let existingValue = method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`];
-        method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? true : existingValue;
+        method.Properties.RequestParameters[`method.${cacheKeyParameter.name}`] = (existingValue == null || existingValue == undefined) ? isRequired : existingValue;
 
         // without this check, endpoints 500 when using cache key parameters like "Authorization" or headers with the same characters in different casing (e.g. "origin" and "Origin")
         if (method.Properties.Integration.Type !== 'AWS_PROXY') {
@@ -43,7 +44,7 @@ const applyCacheKeyParameterSettings = (settings, serverless) => {
           cacheKeyParameter.mappedFrom.includes('method.request.header') ||
           cacheKeyParameter.mappedFrom.includes('method.request.path')
         ) {
-          method.Properties.RequestParameters[cacheKeyParameter.mappedFrom] = (existingValue == null || existingValue == undefined) ? true : existingValue;
+          method.Properties.RequestParameters[cacheKeyParameter.mappedFrom] = (existingValue == null || existingValue == undefined) ? isRequired : existingValue;
         }
 
         // in v1.8.0 "lambda" integration check was removed because setting cache key parameters seemed to work for both AWS_PROXY and AWS (lambda) integration
