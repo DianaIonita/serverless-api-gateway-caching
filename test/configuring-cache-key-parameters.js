@@ -65,7 +65,7 @@ describe('Configuring cache key parameters', () => {
       for (let parameter of cacheKeyParameters) {
         expect(method.Properties.RequestParameters)
           .to.deep.include({
-            [`method.${parameter.name}`]: true
+            [`method.${parameter.name}`]: false
           });
       }
     });
@@ -123,7 +123,7 @@ describe('Configuring cache key parameters', () => {
         for (let parameter of cacheKeyParameters) {
           expect(method.Properties.RequestParameters)
             .to.deep.include({
-              [`method.${parameter.name}`]: true
+              [`method.${parameter.name}`]: false
             });
         }
       });
@@ -203,7 +203,7 @@ describe('Configuring cache key parameters', () => {
         for (let parameter of cacheKeyParameters) {
           expect(method.Properties.RequestParameters)
             .to.deep.include({
-              [`method.${parameter.name}`]: true
+              [`method.${parameter.name}`]: false
             });
         }
       });
@@ -308,7 +308,7 @@ describe('Configuring cache key parameters', () => {
           for (let parameter of firstEndpointCacheKeyParameters) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [`method.${parameter.name}`]: true
+                [`method.${parameter.name}`]: false
               });
           }
         });
@@ -343,7 +343,7 @@ describe('Configuring cache key parameters', () => {
           for (let parameter of secondEndpointCacheKeyParameters) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [`method.${parameter.name}`]: true
+                [`method.${parameter.name}`]: false
               });
           }
         });
@@ -399,7 +399,7 @@ describe('Configuring cache key parameters', () => {
         for (let parameter of firstEndpointCacheKeyParameters) {
           expect(method.Properties.RequestParameters)
             .to.deep.include({
-              [`method.${parameter.name}`]: true
+              [`method.${parameter.name}`]: false
             });
         }
       });
@@ -434,7 +434,7 @@ describe('Configuring cache key parameters', () => {
         for (let parameter of secondEndpointCacheKeyParameters) {
           expect(method.Properties.RequestParameters)
             .to.deep.include({
-              [`method.${parameter.name}`]: true
+              [`method.${parameter.name}`]: false
             });
         }
       });
@@ -506,7 +506,7 @@ describe('Configuring cache key parameters', () => {
           for (let parameter of cacheKeyParameters) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [`method.${parameter.name}`]: true
+                [`method.${parameter.name}`]: false
               });
           }
         });
@@ -568,7 +568,7 @@ describe('Configuring cache key parameters', () => {
           ) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [parameter.mappedFrom]: true
+                [parameter.mappedFrom]: false
               });
           }
         }
@@ -609,7 +609,7 @@ describe('Configuring cache key parameters', () => {
           ) {
             expect(method.Properties.RequestParameters)
               .to.deep.include({
-                [parameter.mappedFrom]: true
+                [parameter.mappedFrom]: false
               });
           }
         }
