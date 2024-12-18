@@ -196,10 +196,36 @@ const updateStageFor = async (serverless, params, stage, region) => {
 
   for (let index in paramsInChunks) {
     serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings (${parseInt(index) + 1} of ${paramsInChunks.length}).`);
-    await serverless.providers.aws.request('APIGateway', 'updateStage', paramsInChunks[index], stage, region);
+    await applyUpdateStageForChunk(paramsInChunks[index], serverless, stage, region);
   }
 
   serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
+}
+
+const applyUpdateStageForChunk = async (chunk, serverless, stage, region) => {
+  const maxRetries = 10;
+  const baseDelay = 500;
+  let attempt = 0;
+
+  while (attempt <= maxRetries) {
+    try {
+      serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings. Attempt ${attempt + 1}.`);
+      await serverless.providers.aws.request('APIGateway', 'updateStage', chunk, stage, region);
+      break;
+    } catch (error) {
+      if (
+          attempt < maxRetries &&
+          error.message.includes('A previous change is still in progress')
+      ) {
+        attempt++;
+        const delay = baseDelay * 2 ** (attempt - 1);
+        serverless.cli.log(`[serverless-api-gateway-caching] Retrying (${attempt}/${maxRetries}) after ${delay}ms due to error: ${error.message}`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        throw new Error(`Failed to update API Gateway cache settings after ${attempt} retries: ${error.message}`);
+      }
+    }
+  }
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
