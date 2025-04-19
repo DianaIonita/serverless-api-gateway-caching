@@ -1,6 +1,7 @@
 const isEmpty = require('lodash.isempty');
 const { retrieveRestApiId } = require('./restApiId');
 const MAX_PATCH_OPERATIONS_PER_STAGE_UPDATE = 80;
+const BASE_RETRY_DELAY_MS = 500;
 
 String.prototype.replaceAll = function (search, replacement) {
   let target = this;
@@ -194,12 +195,46 @@ const updateStageFor = async (serverless, params, stage, region) => {
     paramsInChunks.push(params);
   }
 
-  for (let index in paramsInChunks) {
-    serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings (${parseInt(index) + 1} of ${paramsInChunks.length}).`);
-    await serverless.providers.aws.request('APIGateway', 'updateStage', paramsInChunks[index], stage, region);
+  for (const [index, chunk] of paramsInChunks.entries()) {
+    serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings (${index + 1} of ${paramsInChunks.length}).`);
+    await applyUpdateStageForChunk(chunk, serverless, stage, region);
   }
 
   serverless.cli.log(`[serverless-api-gateway-caching] Done updating API Gateway cache settings.`);
+}
+
+const applyUpdateStageForChunk = async (chunk, serverless, stage, region) => {
+  const maxRetries = 10;
+  const baseDelay = BASE_RETRY_DELAY_MS;
+  let attempt = 0;
+
+  while (attempt < maxRetries) {
+    try {
+      serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings. Attempt ${attempt + 1}.`);
+      await serverless.providers.aws.request('APIGateway', 'updateStage', chunk, stage, region);
+      return;
+    } catch (error) {
+      // Check for specific error code first, fallback to message check
+      if (
+          (error.code === 'ConflictException' || error.message.includes('A previous change is still in progress'))
+      ) {
+        attempt++;
+        if (attempt >= maxRetries) {
+           serverless.cli.log(`[serverless-api-gateway-caching] Maximum retries (${maxRetries}) reached. Failed to update API Gateway cache settings.`);
+           // Log the full error for better debugging before throwing
+           console.error('[serverless-api-gateway-caching] Final error details:', error);
+           throw new Error(`Failed to update API Gateway cache settings after ${maxRetries} retries: ${error.message}`);
+        }
+        const delay = baseDelay * 2 ** attempt;
+        serverless.cli.log(`[serverless-api-gateway-caching] Retrying (${attempt}/${maxRetries}) after ${delay}ms due to error: ${error.message}`);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      } else {
+        console.error('[serverless-api-gateway-caching] Non-retryable error during update:', error);
+        // Throw immediately for non-retryable errors or if string/code doesn't match
+        throw new Error(`Failed to update API Gateway cache settings: ${error.message}`);
+      }
+    }
+  }
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
@@ -240,4 +275,7 @@ const updateStageCacheSettings = async (settings, serverless) => {
   await updateStageFor(serverless, params, settings.stage, settings.region);
 }
 
-module.exports = updateStageCacheSettings;
+module.exports = {
+  updateStageCacheSettings,
+  applyUpdateStageForChunk
+}

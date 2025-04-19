@@ -2,7 +2,7 @@
 
 const ApiGatewayCachingSettings = require('./ApiGatewayCachingSettings');
 const cacheKeyParameters = require('./cacheKeyParameters');
-const updateStageCacheSettings = require('./stageCache');
+const { updateStageCacheSettings } = require('./stageCache');
 const { restApiExists, outputRestApiIdTo } = require('./restApiId');
 
 class ApiGatewayCachingPlugin {
@@ -13,7 +13,7 @@ class ApiGatewayCachingPlugin {
     this.hooks = {
       'before:package:initialize': this.createSettings.bind(this),
       'before:package:finalize': this.updateCloudFormationTemplate.bind(this),
-      'after:aws:deploy:finalize:cleanup': this.updateStage.bind(this),
+      'after:deploy:deploy': this.updateStage.bind(this),
     };
 
     this.defineValidationSchema(serverless);
