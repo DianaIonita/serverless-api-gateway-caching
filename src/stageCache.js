@@ -235,8 +235,6 @@ const applyUpdateStageForChunk = async (chunk, serverless, stage, region) => {
       }
     }
   }
-  // This part should ideally not be reached if the loop condition is < maxRetries and success returns early.
-  // Removing the final safeguard as it is redundant.
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
