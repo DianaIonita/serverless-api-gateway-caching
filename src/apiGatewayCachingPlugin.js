@@ -2,7 +2,7 @@
 
 const ApiGatewayCachingSettings = require('./ApiGatewayCachingSettings');
 const cacheKeyParameters = require('./cacheKeyParameters');
-const updateStageCacheSettings = require('./stageCache');
+const { updateStageCacheSettings } = require('./stageCache');
 const { restApiExists, outputRestApiIdTo } = require('./restApiId');
 
 class ApiGatewayCachingPlugin {

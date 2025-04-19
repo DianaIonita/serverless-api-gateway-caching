@@ -30,10 +30,12 @@
   },
   "devDependencies": {
     "chai": "^4.1.2",
+    "chai-as-promised": "^8.0.1",
     "chance": "^1.0.16",
     "lodash.split": "^4.4.0",
     "mocha": "^10.0.0",
     "mocha-junit-reporter": "^2.0.2",
-    "proxyquire": "^2.1.0"
+    "proxyquire": "^2.1.0",
+    "sinon": "^20.0.0"
   }
 }

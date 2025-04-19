@@ -2,7 +2,17 @@ const given = require('../test/steps/given');
 const when = require('../test/steps/when');
 const ApiGatewayCachingSettings = require('../src/ApiGatewayCachingSettings');
 const UnauthorizedCacheControlHeaderStrategy = require('../src/UnauthorizedCacheControlHeaderStrategy');
+const chai = require('chai');
+const sinon = require('sinon');
 const expect = require('chai').expect;
+
+const { applyUpdateStageForChunk } = require('../src/stageCache');
+
+// Use a before block to asynchronously load and configure chai-as-promised
+before(async () => {
+  const chaiAsPromised = await import('chai-as-promised');
+  chai.use(chaiAsPromised.default); // Use .default when importing ESM dynamically
+});
 
 describe('Updating stage cache settings', () => {
   let serverless, settings, requestsToAws, apiGatewayRequest;
@@ -785,6 +795,104 @@ describe('Updating stage cache settings', () => {
         expect(firstRequestToUpdateStage.properties.patchOperations).to.have.length.at.most(80);
         expect(secondRequestToUpdateStage.properties.patchOperations).to.have.length.at.most(80);
       });
+    });
+  });
+
+  describe('applyUpdateStageForChunk function', () => {
+    let serverless;
+    let clock;
+    const stage = 'test-stage';
+    const region = 'eu-west-1';
+    const chunk = {
+      restApiId: 'test-api-id',
+      stageName: stage,
+      patchOperations: [{ op: 'replace', path: '/cacheClusterEnabled', value: 'true' }]
+    };
+
+    beforeEach(() => {
+      serverless = given.a_serverless_instance()
+        .forStage(stage)
+        .forRegion(region);
+      clock = sinon.useFakeTimers();
+    });
+
+    afterEach(() => {
+      clock.restore();
+      sinon.restore();
+    });
+
+    it('should call aws.request once on success', async () => {
+      const requestStub = sinon.stub(serverless.providers.aws, 'request').resolves();
+
+      await applyUpdateStageForChunk(chunk, serverless, stage, region);
+
+      expect(requestStub.calledOnce).to.be.true;
+      expect(requestStub.getCall(0).args[0]).to.equal('APIGateway');
+      expect(requestStub.getCall(0).args[1]).to.equal('updateStage');
+      expect(requestStub.getCall(0).args[2]).to.deep.equal(chunk);
+      expect(requestStub.getCall(0).args[3]).to.equal(stage);
+      expect(requestStub.getCall(0).args[4]).to.equal(region);
+      expect(serverless._logMessages).to.include('[serverless-api-gateway-caching] Updating API Gateway cache settings. Attempt 1.');
+    });
+
+    it('should retry on ConflictException and succeed on the second attempt', async () => {
+      const conflictError = new Error('A previous change is still in progress');
+      conflictError.code = 'ConflictException';
+
+      // Mock AWS request: fail first, succeed second
+      const requestStub = sinon.stub(serverless.providers.aws, 'request');
+      requestStub.onFirstCall().rejects(conflictError);
+      requestStub.onSecondCall().resolves();
+
+      const promise = applyUpdateStageForChunk(chunk, serverless, stage, region);
+
+      // Advance clock to trigger the retry timeout
+      await clock.tickAsync(1000); // Advance past the first delay (500 * 2^1)
+
+      await promise; // Wait for the function to complete
+
+      expect(requestStub.calledTwice).to.be.true;
+      expect(serverless._logMessages).to.include('[serverless-api-gateway-caching] Updating API Gateway cache settings. Attempt 1.');
+      expect(serverless._logMessages).to.include('[serverless-api-gateway-caching] Retrying (1/10) after 1000ms due to error: A previous change is still in progress');
+      expect(serverless._logMessages).to.include('[serverless-api-gateway-caching] Updating API Gateway cache settings. Attempt 2.');
+    });
+
+    it('should fail after max retries on persistent ConflictException', async () => {
+      const conflictError = new Error('A previous change is still in progress');
+      conflictError.code = 'ConflictException';
+      const maxRetries = 10; // As defined in the function
+
+      // Mock AWS request to always fail with ConflictException
+      const requestStub = sinon.stub(serverless.providers.aws, 'request').rejects(conflictError);
+
+      const promise = applyUpdateStageForChunk(chunk, serverless, stage, region);
+
+      // Advance clock past all retry delays
+      for (let i = 1; i <= maxRetries; i++) {
+        await clock.tickAsync(500 * (2 ** i) + 10); // Ensure delay is passed
+      }
+
+      // Assert the promise rejects with the correct error
+      await expect(promise).to.be.rejectedWith(`Failed to update API Gateway cache settings after ${maxRetries} retries: ${conflictError.message}`);
+      expect(requestStub.callCount).to.equal(maxRetries);
+      expect(serverless._logMessages).to.include(`[serverless-api-gateway-caching] Maximum retries (${maxRetries}) reached. Failed to update API Gateway cache settings.`);
+    });
+
+    it('should fail immediately on non-retryable error', async () => {
+      const otherError = new Error('Some other API Gateway error');
+      otherError.code = 'BadRequestException'; // Example non-retryable code
+
+      // Mock AWS request to fail with a non-retryable error
+      const requestStub = sinon.stub(serverless.providers.aws, 'request').rejects(otherError);
+      const errorSpy = sinon.spy(console, 'error'); // Spy on console.error
+
+      const promise = applyUpdateStageForChunk(chunk, serverless, stage, region);
+
+      // Assert the promise rejects immediately
+      await expect(promise).to.be.rejectedWith(`Failed to update API Gateway cache settings: ${otherError.message}`);
+      expect(requestStub.calledOnce).to.be.true; // Should not retry
+      expect(errorSpy.calledWith('[serverless-api-gateway-caching] Non-retryable error during update:', otherError)).to.be.true;
+      errorSpy.restore(); // Restore the spy
     });
   });
 });
