@@ -235,10 +235,6 @@ const applyUpdateStageForChunk = async (chunk, serverless, stage, region) => {
       }
     }
   }
-  // This part should ideally not be reached if the loop condition is < maxRetries and success returns early.
-  // However, keeping a final throw as a safeguard.
-  serverless.cli.log(`[serverless-api-gateway-caching] Maximum retries (${maxRetries}) reached after loop completion. Failed to update API Gateway cache settings.`);
-  throw new Error(`Failed to update API Gateway cache settings after ${maxRetries} retries.`);
 }
 
 const updateStageCacheSettings = async (settings, serverless) => {
