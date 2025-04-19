@@ -90,14 +90,16 @@ describe('Creating plugin', () => {
         const serverless = { cli: { log: (message) => { logCalledWith = message } } };
         const restApiIdStub = {
           restApiExists: () => scenario.thereIsARestApi,
-          outputRestApiIdTo: () => outputRestApiIdCalled = true
+          outputRestApiIdTo: () => {}
         };
-        const stageCacheStub = () => updateStageCacheSettingsCalled = true;
+        const stageCacheStub = {
+          updateStageCacheSettings: () => updateStageCacheSettingsCalled = true
+        };
         const ApiGatewayCachingPlugin = proxyquire('../src/apiGatewayCachingPlugin', { './restApiId': restApiIdStub, './stageCache': stageCacheStub });
         const plugin = new ApiGatewayCachingPlugin(serverless, {});
 
-        before(() => {
-          plugin.updateStage();
+        before(async () => {
+          await plugin.updateStage();
         });
 
         it('should log a message', () => {

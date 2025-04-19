@@ -1,7 +1,7 @@
 const given = require('../test/steps/given');
 const when = require('../test/steps/when');
 const ApiGatewayCachingSettings = require('../src/ApiGatewayCachingSettings');
-const updateStageCacheSettings = require('../src/stageCache');
+const { updateStageCacheSettings } = require('../src/stageCache');
 const expect = require('chai').expect;
 
 describe('Updating stage cache settings for additional endpoints defined as CloudFormation', () => {
