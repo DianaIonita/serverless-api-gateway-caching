@@ -13,7 +13,7 @@ class ApiGatewayCachingPlugin {
     this.hooks = {
       'before:package:initialize': this.createSettings.bind(this),
       'before:package:finalize': this.updateCloudFormationTemplate.bind(this),
-      'after:aws:deploy:finalize:cleanup': this.updateStage.bind(this),
+      'after:deploy:deploy': this.updateStage.bind(this),
     };
 
     this.defineValidationSchema(serverless);
