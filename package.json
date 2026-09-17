@@ -18,6 +18,8 @@
   "author": "Diana Ionita",
   "license": "ISC",
   "dependencies": {
+    "@aws-sdk/client-api-gateway": "^3.1134.0",
+    "@aws-sdk/client-cloudformation": "^3.1134.0",
     "lodash.get": "^4.4.2",
     "lodash.isempty": "^4.4.0"
   },

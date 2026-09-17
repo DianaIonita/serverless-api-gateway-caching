@@ -1,5 +1,6 @@
 const isEmpty = require('lodash.isempty');
 const { retrieveRestApiId } = require('./restApiId');
+const { APIGatewayClient, UpdateStageCommand, GetStageCommand } = require('@aws-sdk/client-api-gateway');
 const MAX_PATCH_OPERATIONS_PER_STAGE_UPDATE = 80;
 const BASE_RETRY_DELAY_MS = 500;
 
@@ -211,19 +212,33 @@ const applyUpdateStageForChunk = async (chunk, serverless, stage, region) => {
   while (attempt < maxRetries) {
     try {
       serverless.cli.log(`[serverless-api-gateway-caching] Updating API Gateway cache settings. Attempt ${attempt + 1}.`);
-      await serverless.providers.aws.request('APIGateway', 'updateStage', chunk, stage, region);
+
+      // Get AWS SDK v3 configuration from provider
+      const sdkConfig = await serverless.providers.aws.getAwsSdkV3Config();
+
+      // Create API Gateway client with OSLS-provided configuration
+      const client = new APIGatewayClient({
+        ...sdkConfig,
+        region
+      });
+
+      // Create and send the UpdateStage command
+      const command = new UpdateStageCommand(chunk);
+      await client.send(command);
+
       return;
     } catch (error) {
       // Check for specific error code first, fallback to message check
+      // Note: AWS SDK v3 may use error.name instead of error.code
       if (
-          (error.code === 'ConflictException' || error.message.includes('A previous change is still in progress'))
+        (error.code === 'ConflictException' || error.name === 'ConflictException' || error.message.includes('A previous change is still in progress'))
       ) {
         attempt++;
         if (attempt >= maxRetries) {
-           serverless.cli.log(`[serverless-api-gateway-caching] Maximum retries (${maxRetries}) reached. Failed to update API Gateway cache settings.`);
-           // Log the full error for better debugging before throwing
-           console.error('[serverless-api-gateway-caching] Final error details:', error);
-           throw new Error(`Failed to update API Gateway cache settings after ${maxRetries} retries: ${error.message}`);
+          serverless.cli.log(`[serverless-api-gateway-caching] Maximum retries (${maxRetries}) reached. Failed to update API Gateway cache settings.`);
+          // Log the full error for better debugging before throwing
+          console.error('[serverless-api-gateway-caching] Final error details:', error);
+          throw new Error(`Failed to update API Gateway cache settings after ${maxRetries} retries: ${error.message}`);
         }
         const delay = baseDelay * 2 ** attempt;
         serverless.cli.log(`[serverless-api-gateway-caching] Retrying (${attempt}/${maxRetries}) after ${delay}ms due to error: ${error.message}`);
@@ -245,7 +260,18 @@ const updateStageCacheSettings = async (settings, serverless) => {
 
   let restApiId = await retrieveRestApiId(serverless, settings);
 
-  let stageState = await serverless.providers.aws.request('APIGateway', 'getStage', { restApiId, stageName: settings.stage }, { region: settings.region });
+  // Get AWS SDK v3 configuration from provider
+  const sdkConfig = await serverless.providers.aws.getAwsSdkV3Config();
+
+  // Create API Gateway client with OSLS-provided configuration
+  const client = new APIGatewayClient({
+    ...sdkConfig,
+    region: settings.region
+  });
+
+  // Create and send the GetStage command
+  const command = new GetStageCommand({ restApiId, stageName: settings.stage });
+  const stageState = await client.send(command);
 
   let patchOps = createPatchForStage(settings);
 

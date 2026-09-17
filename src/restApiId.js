@@ -1,6 +1,7 @@
 'use strict';
 
 const get = require('lodash.get');
+const { CloudFormationClient, DescribeStacksCommand } = require('@aws-sdk/client-cloudformation');
 const REST_API_ID_KEY = 'RestApiIdForApigCaching';
 
 const getConfiguredRestApiId = (serverless) => {
@@ -43,11 +44,21 @@ const outputRestApiIdTo = (serverless) => {
 const getAlreadyDeployedStack = async (serverless, settings) => {
   try {
     const stackName = serverless.providers.aws.naming.getStackName(settings.stage);
-    const stack = await serverless.providers.aws.request('CloudFormation', 'describeStacks', { StackName: stackName },
-      settings.stage,
-      settings.region
-    );
-    return stack;
+
+    // Get AWS SDK v3 configuration from provider
+    const sdkConfig = await serverless.providers.aws.getAwsSdkV3Config();
+
+    // Create CloudFormation client with OSLS-provided configuration
+    const client = new CloudFormationClient({
+      ...sdkConfig,
+      region: settings.region
+    });
+
+    // Create and send the DescribeStacks command
+    const command = new DescribeStacksCommand({ StackName: stackName });
+    const response = await client.send(command);
+
+    return response;
   }
   catch (error) {
     serverless.cli.log(`[serverless-api-gateway-caching] Could not retrieve stack because: ${error.message}.`);
